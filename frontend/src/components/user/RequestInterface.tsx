@@ -13,7 +13,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
   const [request, setRequest] = useState('');
   const [loading, setLoading] = useState(false);
   const [parsing, setParsing] = useState(false);
-  
+
   const [intent, setIntent] = useState<Intent | null>(null);
   const [execution, setExecution] = useState<ExecutionResult | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([
@@ -25,7 +25,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
 
   const handleSubmit = async (text: string = request) => {
     if (!text.trim()) return;
-    
+
     // Reset state
     setIntent(null);
     setExecution(null);
@@ -51,9 +51,9 @@ export default function RequestInterface({ companyId, userId }: Props) {
       setExecution(execRes);
 
       if (!execRes.success && !execRes.routing?.is_multi_agent) {
-         toast.error(execRes.error || 'Execution failed');
+        toast.error(execRes.error || 'Execution failed');
       } else if (execRes.success) {
-         toast.success('Task completed successfully!');
+        toast.success('Task completed successfully!');
       }
 
     } catch (e) {
@@ -74,7 +74,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
 
   return (
     <div className="page-container max-w-5xl flex flex-col items-center">
-      
+
       {/* Header */}
       <div className="text-center w-full max-w-3xl mb-12">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
@@ -89,9 +89,9 @@ export default function RequestInterface({ companyId, userId }: Props) {
       <div className="w-full max-w-3xl relative">
         {/* Glow behind input */}
         <div className="absolute inset-0 bg-cyan-500/20 rounded-2xl blur-xl transition-opacity duration-500 opacity-50 pointer-events-none" />
-        
+
         <div className="glass-panel relative z-10 p-2 flex bg-[var(--bg-surface)]/80">
-          <textarea 
+          <textarea
             value={request}
             onChange={(e) => setRequest(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -101,14 +101,13 @@ export default function RequestInterface({ companyId, userId }: Props) {
           />
           <div className="absolute bottom-4 right-4 flex items-center gap-2">
             <span className="text-xs text-gray-500 font-mono hidden md:inline">Press Enter ↵</span>
-            <button 
+            <button
               onClick={() => handleSubmit()}
               disabled={parsing || loading || !request.trim()}
-              className={`p-3 rounded-xl transition-all ${
-                request.trim() && !parsing && !loading 
-                  ? 'bg-cyan-600 text-white shadow-[0_0_20px_rgba(8,145,178,0.5)] hover:bg-cyan-500' 
+              className={`p-3 rounded-xl transition-all ${request.trim() && !parsing && !loading
+                  ? 'bg-cyan-600 text-white shadow-[0_0_20px_rgba(8,145,178,0.5)] hover:bg-cyan-500'
                   : 'bg-white/5 text-gray-500 cursor-not-allowed'
-              }`}
+                }`}
             >
               {parsing ? '🧠' : loading ? '⚡' : '🚀'}
             </button>
@@ -119,7 +118,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
         {!intent && !parsing && (
           <div className="mt-8 flex flex-wrap gap-2 justify-center">
             {suggestions.map((s, i) => (
-              <button 
+              <button
                 key={i}
                 onClick={() => handleSubmit(s)}
                 className="px-4 py-2 rounded-full text-sm bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200 transition-colors"
@@ -145,7 +144,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
             <div className="glass-panel p-6 border-cyan-500/30 w-full max-w-xl text-center bg-cyan-900/10">
               <span className="text-xs font-semibold uppercase tracking-wider text-cyan-400 block mb-2">Intent Parsed</span>
               <p className="font-medium text-white mb-4">Required Capability: <span className="bg-cyan-500/20 px-2 py-1 rounded text-cyan-300">{intent.required_capability}</span></p>
-              
+
               <div className="flex items-center justify-center gap-4 text-sm text-[var(--text-secondary)]">
                 <span className="loading-dots">Routing to best agent in portfolio</span>
               </div>
@@ -156,28 +155,30 @@ export default function RequestInterface({ companyId, userId }: Props) {
         {/* Execution Results */}
         {execution && !loading && (
           <div className="w-full animate-in slide-in-from-bottom-8 duration-700">
-            
+
             {/* Multi-Agent Handling */}
             {execution.routing?.is_multi_agent && !execution.success ? (
-              <MultiAgentWorkflow 
-                steps={execution.routing.workflow_steps} 
-                companyId={companyId} 
-                onRefreshDocs={() => handleSubmit(request)} 
+              <MultiAgentWorkflow
+                steps={execution.routing.workflow_steps}
+                companyId={companyId}
+                onRefreshDocs={() => handleSubmit(request)}
               />
             ) : !execution.success ? (
               <div className="glass-panel p-8 text-center max-w-2xl mx-auto bg-red-900/10 border-red-500/20">
                 <div className="text-4xl mb-4">⚠️</div>
                 <h3 className="text-xl font-bold text-red-400 mb-2">Task Failed</h3>
                 <p className="text-gray-300 mb-6">{execution.error}</p>
-                
+
                 {/* Fallback to Marketplace suggestion */}
                 {execution.routing?.alternatives && execution.routing.alternatives.length > 0 && (
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 text-left">
                     <p className="text-sm font-semibold mb-3">Marketplace Alternative Available:</p>
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-bold">{execution.routing.alternatives[0].agent_name}</span>
-                        <span className="text-xs text-emerald-400 ml-2">⭐ {(execution.routing.alternatives[0].quality_score * 5).toFixed(1)}/5</span>
+                        <span className="font-bold">{execution.routing.alternatives[0]?.agent_name}</span>
+                        <span className="text-xs text-emerald-400 ml-2">
+                          ⭐ {((execution.routing.alternatives[0]?.quality_score ?? 0) * 5).toFixed(1)}/5
+                        </span>
                       </div>
                       <span className="text-xs text-gray-500 italic">Contact Admin to add</span>
                     </div>
@@ -199,7 +200,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-4 text-xs font-mono text-[var(--text-secondary)] text-right">
                     <div>
                       <span className="block text-gray-500 uppercase tracking-widest text-[10px]">Time</span>
@@ -211,7 +212,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-8 pb-12">
                   <div className="prose prose-invert max-w-none text-gray-200">
                     {/* Simulated markdown rendering */}
