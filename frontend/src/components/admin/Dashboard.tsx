@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { CompanyAgent, MarketplaceUpdate, MarketplaceAgent } from '../../types';
+import type { CompanyAgent, MarketplaceUpdate } from '../../types';
 import { getCompanyAgents, getCompanyUpdates, applyCompanyUpdates } from '../../api/client';
 import AgentCard from './AgentCard';
 import Marketplace from './Marketplace';
@@ -9,13 +9,13 @@ import toast from 'react-hot-toast';
 
 interface Props {
   companyId: string;
+  userEmail: string;
 }
 
-export default function Dashboard({ companyId }: Props) {
+export default function Dashboard({ companyId, userEmail }: Props) {
   const [agents, setAgents] = useState<CompanyAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMarketplace, setShowMarketplace] = useState(false);
-  const [autoUpdates, setAutoUpdates] = useState<MarketplaceUpdate[]>([]);
   const [manualUpdates, setManualUpdates] = useState<MarketplaceUpdate[]>([]);
   const [showUpdateModal, setShowUpdateModal] = useState<MarketplaceUpdate | null>(null);
 
@@ -42,7 +42,6 @@ export default function Dashboard({ companyId }: Props) {
         const auto = updates.upgrades.filter((u: MarketplaceUpdate) => u.auto_update);
         const manual = updates.upgrades.filter((u: MarketplaceUpdate) => !u.auto_update);
         
-        setAutoUpdates(auto);
         setManualUpdates(manual);
 
         if (auto.length > 0) {
@@ -111,6 +110,7 @@ export default function Dashboard({ companyId }: Props) {
                 key={agent.id} 
                 agent={agent} 
                 companyId={companyId}
+                userEmail={userEmail}
                 onUpdate={fetchDashboard}
               />
             ))}

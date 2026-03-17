@@ -5,8 +5,8 @@ Strategy: version-first selection (newest wins), quality score as tiebreaker.
 from __future__ import annotations
 import re
 from typing import Optional
-from db.supabase_client import get_supabase
-from models import AgentInfo, RoutingDecision, WorkflowStep, Intent
+from ..db.supabase_client import get_supabase
+from ..models import AgentInfo, RoutingDecision, WorkflowStep, Intent
 
 
 def _parse_semver(version: str) -> tuple[int, int, int]:
@@ -18,7 +18,7 @@ def _parse_semver(version: str) -> tuple[int, int, int]:
         return (0, 0, 0)
 
 
-def _agent_row_to_info(row: dict, quality_score: float = 0.5, execution_count: int = 0) -> AgentInfo:
+def _agent_row_to_info(row: dict, quality_score: float = 0.5, execution_count: int = 0, global_quality_score: Optional[float] = None) -> AgentInfo:
     return AgentInfo(
         agent_id=row["agent_id"],
         agent_name=row["agent_name"],
@@ -26,7 +26,7 @@ def _agent_row_to_info(row: dict, quality_score: float = 0.5, execution_count: i
         capabilities=row.get("capabilities", []),
         description=row.get("description", ""),
         provider=row.get("provider", ""),
-        quality_score=quality_score,
+        quality_score=global_quality_score if global_quality_score is not None else quality_score,
         execution_count=execution_count,
         pricing_model=row.get("pricing_model", "free"),
         changelog=row.get("changelog"),
@@ -74,8 +74,18 @@ def route_intent(intent: Intent, company_id: str) -> RoutingDecision:
         
         if isinstance(mp, dict):
             aid = mp.get("agent_id") or row.get("agent_id")
+            # Get quality_privacy setting (default to private)
+            settings = row.get("settings") or {}
+            quality_privacy = settings.get("quality_privacy", "private")
+            
+            # If public, use global_quality_score from marketplace
+            quality_to_use = float(row.get("quality_score") or 0.5)
+            if quality_privacy == "public" and mp.get("global_quality_score"):
+                quality_to_use = float(mp.get("global_quality_score"))
+            
             company_map[aid] = {
-                "quality_score": float(row.get("quality_score") or 0.5),
+                "quality_score": quality_to_use,
+                "quality_privacy": quality_privacy,
                 "execution_count": int(row.get("execution_count") or 0),
                 **mp,
             }

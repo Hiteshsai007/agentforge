@@ -103,3 +103,81 @@ export const getAdminMetrics = async (company_id: string, agent_id?: string) => 
   });
   return data;
 };
+
+// ── Credentials ───────────────────────────────────────────────────────────────
+export const generateCredentials = async (company_id: string, agent_id: string) => {
+  const { data } = await api.post(
+    `/api/company/${company_id}/agents/${agent_id}/generate-credentials`,
+    {}
+  );
+  return data;
+};
+
+export const getCredentialsStatus = async (company_id: string, agent_id: string) => {
+  const { data } = await api.get(
+    `/api/company/${company_id}/agents/${agent_id}/credentials-status`
+  );
+  return data;
+};
+
+export const rotateCredentials = async (company_id: string, agent_id: string) => {
+  const { data } = await api.post(
+    `/api/company/${company_id}/agents/${agent_id}/rotate-credentials`,
+    {}
+  );
+  return data;
+};
+
+export const regenerateWithEmail = async (email: string, company_id: string, agent_id: string) => {
+  const { data } = await api.post(
+    `/api/credentials/regenerate-with-email`,
+    { email, company_id, agent_id }
+  );
+  return data;
+};
+
+export const updateQualityPrivacy = async (
+  company_id: string,
+  agent_id: string,
+  quality_privacy: 'private' | 'public'
+) => {
+  const { data } = await api.patch(
+    `/api/company/${company_id}/agents/${agent_id}`,
+    { settings: { quality_privacy } }
+  );
+  return data;
+};
+
+// ── OTP Credentials ─────────────────────────────────────────────────────────────
+export const requestOTP = async (email: string, company_id: string, agent_id: string) => {
+  const { data } = await api.post('/api/credentials/request-otp', {
+    email,
+    company_id,
+    agent_id,
+  });
+  return data as { success: boolean; message: string; expires_in: number };
+};
+
+export const verifyOTP = async (
+  email: string,
+  otp_code: string,
+  company_id: string,
+  agent_id: string
+) => {
+  const { data } = await api.post('/api/credentials/verify-otp', {
+    email,
+    otp_code,
+    company_id,
+    agent_id,
+  });
+  return data as { success: boolean; message: string };
+};
+
+export const resendOTP = async (email: string, company_id: string, agent_id: string) => {
+  const { data } = await api.post('/api/credentials/resend-otp', {
+    email,
+    company_id,
+    agent_id,
+  });
+  return data as { success: boolean; message: string; expires_in: number };
+};

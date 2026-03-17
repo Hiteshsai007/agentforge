@@ -3,8 +3,8 @@ API: POST /api/intent/parse
 Parses natural language into structured intent.
 """
 from fastapi import APIRouter
-from models import ParseRequest, ParseResponse, Intent
-from engine.intent_parser import parse_intent
+from ..models import ParseRequest, ParseResponse, Intent
+from ..engine.intent_parser import parse_intent
 
 router = APIRouter()
 

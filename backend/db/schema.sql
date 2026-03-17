@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS agents_marketplace (
     updated_at             TIMESTAMP    NOT NULL DEFAULT NOW(),
     is_available           BOOLEAN      NOT NULL DEFAULT TRUE,
     changelog              TEXT,
+    global_quality_score   DECIMAL(4,3) DEFAULT NULL,
 
     UNIQUE(agent_name, version)
 );
@@ -92,7 +93,9 @@ CREATE TABLE IF NOT EXISTS company_agents (
     last_used_at         TIMESTAMP,
     total_execution_time DECIMAL(12,3)         DEFAULT 0,
     total_cost           DECIMAL(10,4)         DEFAULT 0,
-    settings             JSONB        NOT NULL DEFAULT '{}'::jsonb,
+    settings             JSONB        NOT NULL DEFAULT '{
+        "quality_privacy": "private"
+    }'::jsonb,
 
     UNIQUE(company_id, agent_id)
 );
@@ -124,6 +127,47 @@ CREATE INDEX IF NOT EXISTS idx_exec_agent   ON execution_history(agent_id);
 CREATE INDEX IF NOT EXISTS idx_exec_time    ON execution_history(executed_at DESC);
 
 -- ─────────────────────────────────────────
+-- Table: agent_credentials
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS agent_credentials (
+    credential_id        UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id           UUID         NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
+    agent_id             UUID         NOT NULL REFERENCES agents_marketplace(agent_id) ON DELETE CASCADE,
+    api_key_hash         VARCHAR(255) NOT NULL UNIQUE,
+    secret_key_hash      VARCHAR(255) NOT NULL,
+    expiry_date          TIMESTAMP    NOT NULL,
+    rotation_status      VARCHAR(20)  DEFAULT 'active',
+    created_at           TIMESTAMP    NOT NULL DEFAULT NOW(),
+    last_rotated         TIMESTAMP    DEFAULT NULL,
+    last_used            TIMESTAMP    DEFAULT NULL,
+
+    UNIQUE(company_id, agent_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cred_company ON agent_credentials(company_id);
+CREATE INDEX IF NOT EXISTS idx_cred_agent   ON agent_credentials(agent_id);
+CREATE INDEX IF NOT EXISTS idx_cred_api_key ON agent_credentials(api_key_hash);
+
+-- ─────────────────────────────────────────
+-- Table: email_verifications
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS email_verifications (
+    verification_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) NOT NULL,
+    code VARCHAR(6) NOT NULL,
+    purpose VARCHAR(50) NOT NULL DEFAULT 'reveal_api_key',
+    company_id UUID,
+    agent_id UUID,
+    attempts INTEGER DEFAULT 0,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_verification_email ON email_verifications(email);
+CREATE INDEX IF NOT EXISTS idx_verification_code ON email_verifications(code);
+
+-- ─────────────────────────────────────────
 -- Function: update updated_at automatically
 -- ─────────────────────────────────────────
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -150,10 +194,26 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agents_marketplace ENABLE ROW LEVEL SECURITY;
 ALTER TABLE company_agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE execution_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agent_credentials ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (idempotent approach)
+DROP POLICY IF EXISTS "Allow anon all on companies" ON companies;
+DROP POLICY IF EXISTS "Allow anon all on users" ON users;
+DROP POLICY IF EXISTS "Allow anon all on agents_marketplace" ON agents_marketplace;
+DROP POLICY IF EXISTS "Allow anon all on company_agents" ON company_agents;
+DROP POLICY IF EXISTS "Allow anon all on execution_history" ON execution_history;
+DROP POLICY IF EXISTS "Allow anon all on agent_credentials" ON agent_credentials;
+
+-- Create new policies
 CREATE POLICY "Allow anon all on companies" ON companies FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon all on users" ON users FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon all on agents_marketplace" ON agents_marketplace FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon all on company_agents" ON company_agents FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon all on execution_history" ON execution_history FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon all on agent_credentials" ON agent_credentials FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Email Verifications RLS
+ALTER TABLE email_verifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon all on email_verifications" ON email_verifications;
+CREATE POLICY "Allow anon all on email_verifications" ON email_verifications FOR ALL TO anon USING (true) WITH CHECK (true);
 

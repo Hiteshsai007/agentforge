@@ -82,7 +82,7 @@ export default function MultiAgentWorkflow({ steps, companyId, onRefreshDocs }: 
                     <div key={opt.agent_id} className="bg-black/30 p-3 rounded-lg flex items-center justify-between gap-3">
                       <div>
                         <div className="font-semibold text-white text-sm">{opt.agent_name}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">⭐ {(opt.quality_score * 5).toFixed(1)}/5</div>
+                        <div className="text-xs text-gray-400 mt-0.5">⭐ {((opt.quality_score ?? 0) * 5).toFixed(1)}/5</div>
                       </div>
                       <button 
                         onClick={() => handleAddAgent(opt, step.capability)}

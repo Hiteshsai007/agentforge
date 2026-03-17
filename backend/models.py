@@ -116,6 +116,7 @@ class AddAgentRequest(BaseModel):
 class UpdateAgentSettingsRequest(BaseModel):
     auto_update_enabled: Optional[bool] = None
     status: Optional[str] = None
+    quality_privacy: Optional[str] = None  # "private" | "public"
 
 
 # ─── Quality / EMA ─────────────────────────────────────────────────────────────
@@ -132,3 +133,43 @@ class ExecutionMetrics(BaseModel):
         speed_w = max(0.0, 1.0 - (self.execution_time_seconds / self.max_execution_time))
         cost_w  = max(0.0, 1.0 - (self.tokens_used / self.max_tokens))
         return 0.5 * success_w + 0.3 * speed_w + 0.2 * cost_w
+
+
+# ─── Credentials ───────────────────────────────────────────────────────────────
+
+class CredentialGenerateRequest(BaseModel):
+    send_email: bool = True
+
+
+class CredentialResponse(BaseModel):
+    credential_id: str
+    api_key: str  # Plaintext, only returned once
+    secret_key: str  # Plaintext, only returned once
+    expiry_date: str
+    created_at: str
+    message: str = "Store these credentials securely. They will not be shown again."
+
+
+class CredentialStatusResponse(BaseModel):
+    credential_id: str
+    api_key_masked: str  # e.g., "sk_live_****...****"
+    expiry_date: str
+    days_until_expiry: int
+    rotation_status: str
+    last_used: Optional[str]
+
+
+class CredentialRotateRequest(BaseModel):
+    send_email: bool = True
+
+
+class CredentialVerifyRequest(BaseModel):
+    api_key: str
+    secret_key: str
+
+
+class CredentialVerifyResponse(BaseModel):
+    valid: bool
+    company_id: Optional[str] = None
+    agent_id: Optional[str] = None
+    error: Optional[str] = None

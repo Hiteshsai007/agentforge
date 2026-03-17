@@ -6,12 +6,19 @@ import json
 import os
 import re
 from dotenv import load_dotenv
-import google.generativeai as genai
-from models import Intent, SubTask
+from ..models import Intent, SubTask
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
+# Lazy-load genai to avoid Python 3.14 protobuf issues at import time
+_genai = None
+def _get_genai():
+    global _genai
+    if _genai is None:
+        import google.generativeai as genai
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
+        _genai = genai
+    return _genai
 
 _SYSTEM_PROMPT = """You are an AI intent parser for an agent marketplace. 
 Parse user requests into structured JSON intents.
@@ -91,6 +98,7 @@ def parse_intent(request: str) -> dict:
     Returns either an Intent-compatible dict or an error dict.
     """
     try:
+        genai = _get_genai()
         model = genai.GenerativeModel(
             model_name=os.getenv("LLM_MODEL", "gemini-2.0-flash"),
             system_instruction=_SYSTEM_PROMPT,
