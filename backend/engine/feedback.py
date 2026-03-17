@@ -143,7 +143,7 @@ def check_marketplace_updates(company_id: str) -> dict:
             "agent_name", current_name
         ).eq("is_available", True).execute()
 
-        from engine.router import _parse_semver
+        from .router import _parse_semver
         for newer_agent in (newer.data or []):
             nv = newer_agent["version"]
             if _parse_semver(nv) > _parse_semver(current_version):

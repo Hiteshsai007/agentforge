@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { CompanyAgent } from '../../types';
 import { updateAgentSettings, removeAgent } from '../../api/client';
-import CredentialDashboard from './CredentialDashboard';
+import CredentialModal from './CredentialModal';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 
 export default function AgentCard({ agent, companyId, userEmail, onUpdate }: Props) {
   const [showSettings, setShowSettings] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'general' | 'credentials'>('general');
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const mp = agent.agents_marketplace!;
@@ -122,6 +122,15 @@ export default function AgentCard({ agent, companyId, userEmail, onUpdate }: Pro
         </div>
       </div>
 
+      {/* Credentials Button */}
+      <button
+        onClick={() => setShowCredentialsModal(true)}
+        className="mt-4 w-full py-3 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 border border-indigo-500/30 rounded-xl font-medium text-indigo-300 transition-all flex items-center justify-center gap-2"
+      >
+        <span>🔑</span>
+        Manage Credentials
+      </button>
+
       {/* Settings overlay */}
       {showSettings && (
         <div className="absolute inset-0 bg-[var(--bg-elevated)]/95 backdrop-blur-md z-20 p-6 flex flex-col pt-12">
@@ -132,69 +141,51 @@ export default function AgentCard({ agent, companyId, userEmail, onUpdate }: Pro
             ✕
           </button>
           
-          {/* Tabs */}
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setSettingsTab('general')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                settingsTab === 'general'
-                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                  : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
-              }`}
-            >
-              ⚙️ General
-            </button>
-            <button
-              onClick={() => setSettingsTab('credentials')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                settingsTab === 'credentials'
-                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                  : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
-              }`}
-            >
-              🔑 Credentials
-            </button>
-          </div>
-
-          {/* Tab Content */}
+          {/* Settings Content */}
           <div className="flex-1 overflow-y-auto">
-            {settingsTab === 'general' ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-black/30 rounded-lg border border-white/5">
-                  <div>
-                    <div className="font-semibold mb-1">Auto-Update</div>
-                    <div className="text-xs text-[var(--text-secondary)]">
-                      Automatically install new versions when available
-                    </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-black/30 rounded-lg border border-white/5">
+                <div>
+                  <div className="font-semibold mb-1">Auto-Update</div>
+                  <div className="text-xs text-[var(--text-secondary)]">
+                    Automatically install new versions when available
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer"
-                      checked={agent.auto_update_enabled}
-                      onChange={handleToggleAutoUpdate}
-                      disabled={loading}
-                    />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
-                  </label>
                 </div>
-
-                <div className="mt-auto pt-4">
-                  <button 
-                    onClick={handleRemove}
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={agent.auto_update_enabled}
+                    onChange={handleToggleAutoUpdate}
                     disabled={loading}
-                    className="danger-btn w-full"
-                  >
-                    Remove Agent from Portfolio
-                  </button>
-                </div>
+                  />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                </label>
               </div>
-            ) : (
-              <CredentialDashboard agent={agent} companyId={companyId} userEmail={userEmail} onUpdate={onUpdate} />
-            )}
+
+              <div className="mt-auto pt-4">
+                <button 
+                  onClick={handleRemove}
+                  disabled={loading}
+                  className="danger-btn w-full"
+                >
+                  Remove Agent from Portfolio
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Credentials Modal */}
+      <CredentialModal
+        agent={agent}
+        companyId={companyId}
+        userEmail={userEmail}
+        isOpen={showCredentialsModal}
+        onClose={() => setShowCredentialsModal(false)}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 }

@@ -13,8 +13,13 @@ from .api.marketplace import router as marketplace_router
 from .api.company     import router as company_router
 from .api.admin       import router as admin_router
 from .api.credentials import router as credentials_router
+from .api.auth        import router as auth_router
 
 load_dotenv()
+
+# Initialize email service on startup
+from .services.email_service import EmailService
+EmailService.configure()
 
 app = FastAPI(
     title="AI Agent Marketplace + Intent Router",
@@ -50,6 +55,7 @@ app.include_router(marketplace_router, prefix="/api/marketplace")
 app.include_router(company_router,     prefix="/api/company")
 app.include_router(admin_router,       prefix="/api/admin")
 app.include_router(credentials_router, prefix="/api/credentials")
+app.include_router(auth_router,        prefix="/api/auth")
 
 
 @app.get("/", tags=["Health"])

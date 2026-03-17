@@ -23,6 +23,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS companies (
     company_id   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_name VARCHAR(255)  NOT NULL,
+    invite_code  VARCHAR(50)   UNIQUE,
     created_at   TIMESTAMP     NOT NULL DEFAULT NOW(),
     settings     JSONB         NOT NULL DEFAULT '{
         "llm_provider": "gemini",
@@ -40,13 +41,14 @@ CREATE TABLE IF NOT EXISTS companies (
 -- Table: users
 -- ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
-    user_id    UUID       PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company_id UUID       REFERENCES companies(company_id) ON DELETE CASCADE,
-    email      VARCHAR(255) UNIQUE NOT NULL,
-    full_name  VARCHAR(255),
-    role       user_role  NOT NULL DEFAULT 'end_user',
-    created_at TIMESTAMP  NOT NULL DEFAULT NOW(),
-    last_login TIMESTAMP
+    user_id         UUID       PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id      UUID       REFERENCES companies(company_id) ON DELETE SET NULL,
+    email           VARCHAR(255) UNIQUE NOT NULL,
+    password_hash   VARCHAR(255) NOT NULL,
+    full_name       VARCHAR(255),
+    role            user_role  NOT NULL DEFAULT 'end_user',
+    created_at      TIMESTAMP  NOT NULL DEFAULT NOW(),
+    last_login      TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);

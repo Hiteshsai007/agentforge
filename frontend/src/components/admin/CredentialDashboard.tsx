@@ -55,6 +55,21 @@ export default function CredentialDashboard({ agent, companyId, userEmail, onUpd
     fetchCredentialStatus();
   };
 
+  const handleQualityPrivacyToggle = async () => {
+    const newValue = qualityPrivacy === 'private' ? 'public' : 'private';
+    setLoading(true);
+    try {
+      await updateQualityPrivacy(companyId, agent.agent_id, newValue);
+      setQualityPrivacy(newValue);
+      toast.success(`Quality scoring set to ${newValue}`);
+    } catch (err) {
+      console.error('Failed to update quality privacy:', err);
+      toast.error('Failed to update quality privacy');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
