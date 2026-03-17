@@ -52,7 +52,7 @@ export default function App() {
 
       {/* Main Content Area Routing */}
       <main className="flex-1 pt-16 relative">
-        {persona.role === 'admin' && <Dashboard companyId={persona.company_id!} />}
+        {persona.role === 'admin' && <Dashboard companyId={persona.company_id!} userEmail={persona.email} />}
         {persona.role === 'end_user' && <RequestInterface companyId={persona.company_id!} userId={persona.email} />}
         {persona.role === 'developer' && <DeveloperPortal />}
       </main>

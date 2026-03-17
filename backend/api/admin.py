@@ -2,7 +2,7 @@
 API: GET /api/admin/metrics — programmer-only metrics endpoint
 """
 from fastapi import APIRouter, Query
-from db.supabase_client import get_supabase
+from ..db.supabase_client import get_supabase
 
 router = APIRouter()
 

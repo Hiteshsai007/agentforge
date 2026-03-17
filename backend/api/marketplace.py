@@ -3,8 +3,8 @@ API: GET /api/marketplace/agents  — Browse marketplace
      POST /api/marketplace/register — Developer registers new agent
 """
 from fastapi import APIRouter, Query
-from models import RegisterAgentRequest
-from db.supabase_client import get_supabase
+from ..models import RegisterAgentRequest
+from ..db.supabase_client import get_supabase
 import httpx
 
 router = APIRouter()

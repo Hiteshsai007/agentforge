@@ -10,7 +10,8 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from db.supabase_client import get_supabase
+from .supabase_client import get_supabase
+from ..services.email_service import EmailService
 
 DEMO_COMPANY = {
     "company_name": "Acme Corp",
@@ -228,5 +229,15 @@ def seed():
     return company_id
 
 
-if __name__ == "__main__":
+async def seed_all():
+    """Run all seeding steps."""
     seed()
+    
+    # Now seed credentials
+    from db.seed_credentials import seed_credentials
+    await seed_credentials()
+
+
+if __name__ == "__main__":
+    EmailService.configure()
+    asyncio.run(seed_all())

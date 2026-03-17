@@ -5,8 +5,8 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-from db.supabase_client import get_supabase
-from models import ExecutionMetrics
+from ..db.supabase_client import get_supabase
+from ..models import ExecutionMetrics
 
 load_dotenv()
 
@@ -40,14 +40,17 @@ def record_execution(
     )
     exec_score = metrics.execution_score()
 
-    # Fetch current quality score
-    ca_result = db.table("company_agents").select("quality_score, execution_count").eq(
+    # Fetch current quality score and privacy setting
+    ca_result = db.table("company_agents").select("quality_score, execution_count, settings").eq(
         "company_id", company_id
     ).eq("agent_id", agent_id).execute()
 
     prev_quality = 0.5
+    quality_privacy = "private"
     if ca_result.data:
         prev_quality = float(ca_result.data[0].get("quality_score") or 0.5)
+        settings = ca_result.data[0].get("settings") or {}
+        quality_privacy = settings.get("quality_privacy", "private")
 
     # EMA formula
     new_quality = ALPHA * exec_score + (1 - ALPHA) * prev_quality
@@ -87,6 +90,25 @@ def record_execution(
         ).eq("agent_id", agent_id).execute()
     except Exception as e:
         print(f"⚠️  Failed to update company_agents quality score: {e}")
+    
+    # If quality_privacy is "public", also update global_quality_score
+    if quality_privacy == "public":
+        try:
+            # Fetch current global score for this agent
+            agent_result = db.table("agents_marketplace").select("global_quality_score").eq(
+                "agent_id", agent_id
+            ).execute()
+            
+            if agent_result.data:
+                prev_global = float(agent_result.data[0].get("global_quality_score") or 0.5)
+                new_global = ALPHA * exec_score + (1 - ALPHA) * prev_global
+                new_global = round(max(0.0, min(1.0, new_global)), 3)
+                
+                db.table("agents_marketplace").update({"global_quality_score": new_global}).eq(
+                    "agent_id", agent_id
+                ).execute()
+        except Exception as e:
+            print(f"⚠️  Failed to update global quality score: {e}")
 
     return new_quality
 

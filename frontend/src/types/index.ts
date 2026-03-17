@@ -112,3 +112,25 @@ export interface MarketplaceUpdate {
   agent_name: string;
   auto_update: boolean;
 }
+
+export interface Credential {
+  credential_id: string;
+  api_key?: string; // Only during generation
+  api_key_masked: string; // e.g., "sk_live_****...F2Sa"
+  secret_key?: string; // Only during generation
+  expiry_date: string;
+  rotation_status: 'active' | 'rotated' | 'revoked';
+  created_at: string;
+  rotated_at?: string;
+  days_until_expiry: number;
+}
+
+export interface CredentialGenerateRequest {
+  agent_id: string;
+}
+
+export interface CredentialResponse {
+  success: boolean;
+  credential?: Credential;
+  message?: string;
+}

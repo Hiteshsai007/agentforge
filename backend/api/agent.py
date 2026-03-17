@@ -3,18 +3,47 @@ API: POST /api/agent/execute
 Orchestrates intent → routing → execution → feedback.
 """
 import uuid
-from fastapi import APIRouter
-from models import ExecuteRequest, ExecutionResult, RoutingDecision
-from engine.intent_parser import parse_intent
-from engine.router import route_intent
-from engine.executor import execute_agent
-from engine.feedback import record_execution
+from fastapi import APIRouter, Header, HTTPException
+from typing import Optional
+from ..models import ExecuteRequest, ExecutionResult, RoutingDecision
+from ..engine.intent_parser import parse_intent
+from ..engine.router import route_intent
+from ..engine.executor import execute_agent
+from ..engine.feedback import record_execution
+from ..services.credentials import CredentialManager
 
 router = APIRouter()
 
 
 @router.post("/execute", response_model=ExecutionResult, tags=["Agent"])
-async def execute(body: ExecuteRequest):
+async def execute(
+    body: ExecuteRequest,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    x_secret_key: Optional[str] = Header(None, alias="X-Secret-Key"),
+):
+    # ── Verify credentials if provided ───────────────────────────────────────
+    if x_api_key or x_secret_key:
+        if not x_api_key or not x_secret_key:
+            raise HTTPException(
+                status_code=401,
+                detail="Both X-API-Key and X-Secret-Key headers are required for authentication"
+            )
+        
+        result = CredentialManager.verify_credentials(x_api_key, x_secret_key)
+        
+        if not result["valid"]:
+            raise HTTPException(
+                status_code=401,
+                detail=result.get("error", "Invalid credentials")
+            )
+        
+        # Optionally verify the credentials belong to the requested company
+        if body.company_id and result["company_id"] != body.company_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Credentials do not belong to the specified company"
+            )
+
     company_id = body.company_id
 
     # ── Route the intent ────────────────────────────────────────────
