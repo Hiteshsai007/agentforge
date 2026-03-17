@@ -9,6 +9,15 @@ const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const api = axios.create({ baseURL: BASE, timeout: 120000 });
 
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // ── Intent ────────────────────────────────────────────────────────────────────
 export const parseIntent = async (request: string) => {
   const { data } = await api.post('/api/intent/parse', { request });
@@ -180,4 +189,10 @@ export const resendOTP = async (email: string, company_id: string, agent_id: str
     agent_id,
   });
   return data as { success: boolean; message: string; expires_in: number };
+};
+
+// ── Company Invite Code ─────────────────────────────────────────────────────────
+export const getInviteCode = async () => {
+  const { data } = await api.get('/api/auth/company/invite-code');
+  return data as { company_id: string; company_name: string; invite_code: string };
 };

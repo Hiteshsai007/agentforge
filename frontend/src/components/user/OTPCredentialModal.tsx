@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { requestOTP, verifyOTP, resendOTP } from '../../api/client';
+import { requestOTP, verifyOTP } from '../../api/client';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -144,8 +144,8 @@ export default function OTPCredentialModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-[#1a1a2e] border border-white/20 rounded-xl p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[99999]">
+      <div className="bg-[#1a1a2e] border-2 border-blue-500 rounded-xl p-6 w-full max-w-md">
         {step === 'sending' && (
           <div className="text-center py-8">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
@@ -156,6 +156,7 @@ export default function OTPCredentialModal({
               Sending verification code to<br />
               <span className="text-blue-400">{email}</span>
             </p>
+            {error && <p className="text-red-400 mt-4">{error}</p>}
           </div>
         )}
 
@@ -199,7 +200,7 @@ export default function OTPCredentialModal({
               <button
                 onClick={handleVerify}
                 disabled={otp.join('').length !== 6}
-                className="w-full primary-btn disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Verify & Generate Credentials
               </button>

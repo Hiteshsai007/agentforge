@@ -14,7 +14,7 @@ from ..services.email_service import EmailService
 
 router = APIRouter()
 
-OTP_EXPIRY_MINUTES = 5
+OTP_EXPIRY_MINUTES = 15
 MAX_ATTEMPTS = 3
 RESEND_COOLDOWN_SECONDS = 60
 
@@ -77,20 +77,15 @@ async def request_otp(body: RequestOTPRequest):
         "purpose", "reveal_api_key"
     ).eq("used", False).execute()
     
+    # Delete ALL existing unused OTPs first to avoid conflicts
     if existing_otp.data:
-        last_created = existing_otp.data[0].get("created_at")
-        if last_created:
-            created_at = datetime.fromisoformat(last_created.replace("Z", "+00:00"))
-            time_diff = (datetime.utcnow() - created_at.replace(tzinfo=None)).total_seconds()
-            if time_diff < RESEND_COOLDOWN_SECONDS:
-                remaining = int(RESEND_COOLDOWN_SECONDS - time_diff)
-                raise HTTPException(
-                    status_code=429,
-                    detail=f"Please wait {remaining} seconds before requesting another OTP"
-                )
+        for old_otp in existing_otp.data:
+            db.table("email_verifications").delete().eq("verification_id", old_otp["verification_id"]).execute()
     
     otp_code = "".join(secrets.choice("0123456789") for _ in range(6))
     expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)
+    expires_at_str = expires_at.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    print(f"[DEBUG] Creating OTP, expires_at: {expires_at_str}, now: {datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')}")
     
     db.table("email_verifications").insert({
         "email": body.email,
@@ -99,7 +94,7 @@ async def request_otp(body: RequestOTPRequest):
         "company_id": body.company_id,
         "agent_id": body.agent_id,
         "attempts": 0,
-        "expires_at": expires_at.isoformat(),
+        "expires_at": expires_at_str,
         "used": False,
     }).execute()
     
@@ -123,11 +118,12 @@ async def verify_otp(body: VerifyOTPRequest):
     """
     db = get_supabase()
     
+    # Get the most recent unused OTP
     otp_result = db.table("email_verifications").select("*").eq(
         "email", body.email
     ).eq("company_id", body.company_id).eq(
         "agent_id", body.agent_id
-    ).eq("purpose", "reveal_api_key").eq("used", False).execute()
+    ).eq("purpose", "reveal_api_key").eq("used", False).order("created_at", desc=True).limit(1).execute()
     
     if not otp_result.data:
         raise HTTPException(
@@ -136,15 +132,22 @@ async def verify_otp(body: VerifyOTPRequest):
         )
     
     otp_record = otp_result.data[0]
+    expires_at_str = otp_record['expires_at']
+    print(f"[DEBUG] expires_at_str from DB: '{expires_at_str}'")
     
-    if otp_record.get("attempts", 0) >= MAX_ATTEMPTS:
-        raise HTTPException(
-            status_code=403,
-            detail="Maximum attempts exceeded. Please request a new OTP."
-        )
+    # Parse the datetime - Supabase returns it without timezone and with microseconds
+    # Handle formats like: "2026-03-17T16:26:05.144678" or "2026-03-17T17:20:07+00:00"
+    try:
+        # First try with timezone
+        expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+    except ValueError:
+        # If that fails, parse as naive datetime
+        expires_at = datetime.fromisoformat(expires_at_str)
     
-    expires_at = datetime.fromisoformat(otp_record["expires_at"].replace("Z", "+00:00"))
-    if expires_at.replace(tzinfo=None) < datetime.utcnow():
+    now = datetime.utcnow()
+    print(f"[DEBUG] expires_at: {expires_at}, now: {now}, is_expired: {expires_at < now}")
+    
+    if expires_at < now:
         raise HTTPException(
             status_code=400,
             detail="OTP has expired. Please request a new one."
