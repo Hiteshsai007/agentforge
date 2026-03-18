@@ -27,7 +27,6 @@ class TestAgentExecution:
         )
         assert response.status_code == 200
         data = response.json()
-
         assert "agents_used" in data
         assert "routing" in data
 
@@ -49,7 +48,6 @@ class TestAgentExecution:
         )
         assert response.status_code == 200
         data = response.json()
-
         assert "routing" in data
         assert "agents_used" in data
 
@@ -71,7 +69,6 @@ class TestAgentExecution:
         )
         assert response.status_code == 200
         data = response.json()
-
         assert "routing" in data
         assert "agents_used" in data
 
@@ -92,7 +89,6 @@ class TestAgentExecution:
         )
         assert response.status_code == 200
         data = response.json()
-
         assert "routing" in data
         assert "agents_used" in data
 
@@ -114,7 +110,6 @@ class TestAgentExecution:
         )
         assert response.status_code == 200
         data = response.json()
-
         assert "routing" in data
         assert "agents_used" in data
 
@@ -159,7 +154,6 @@ class TestAgentExecution:
         )
         assert response.status_code == 200
         data = response.json()
-
         assert (
             data["routing"]["selected_agent"]["agent_id"]
             == "d1b711c9-8ba6-461e-823f-2c3cf77babf8"
