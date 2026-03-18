@@ -117,7 +117,7 @@ class CredentialManager:
         Verify API key and secret key against stored credentials.
         Returns dict with valid, company_id, agent_id, error.
         """
-        from ..db.supabase_client import get_supabase
+        from db.supabase_client import get_supabase
 
         db = get_supabase()
 

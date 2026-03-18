@@ -3,43 +3,23 @@ AI Agent Marketplace + Intent Router — FastAPI Backend
 Main application entry point.
 
 Works with both:
-- cd backend && python main.py
-- cd project && python -m backend.main
+- python main.py (from backend directory)
+- python -m backend.main (from project root)
 """
 
-import os
-import logging
 import sys
+import os
 from pathlib import Path
 
-project_root = Path(__file__).parent.parent
+backend_dir = Path(__file__).parent.resolve()
+project_root = backend_dir.parent
+
+if backend_dir.name == "backend" and str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-try:
-    from config import config
-except ImportError:
-    from backend.config import config
-
-try:
-    from api.intent import router as intent_router
-    from api.agent import router as agent_router
-    from api.marketplace import router as marketplace_router
-    from api.company import router as company_router
-    from api.admin import router as admin_router
-    from api.credentials import router as credentials_router
-    from api.auth import router as auth_router
-except ImportError:
-    from backend.api.intent import router as intent_router
-    from backend.api.agent import router as agent_router
-    from backend.api.marketplace import router as marketplace_router
-    from backend.api.company import router as company_router
-    from backend.api.admin import router as admin_router
-    from backend.api.credentials import router as credentials_router
-    from backend.api.auth import router as auth_router
+import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,6 +27,18 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from config import config
+from api.intent import router as intent_router
+from api.agent import router as agent_router
+from api.marketplace import router as marketplace_router
+from api.company import router as company_router
+from api.admin import router as admin_router
+from api.credentials import router as credentials_router
+from api.auth import router as auth_router
 
 logger.info("Starting AI Agent Marketplace Backend v%s", config.APP_VERSION)
 
@@ -97,7 +89,6 @@ logger.info("API routes registered")
 @app.on_event("startup")
 async def startup_event():
     logger.info("Application startup complete")
-    logger.info("Config: %s", config.get_all())
 
 
 @app.get("/", tags=["Health"])
@@ -113,11 +104,6 @@ async def root():
 @app.get("/health", tags=["Health"])
 async def health():
     return {"status": "healthy"}
-
-
-@app.get("/config", tags=["Health"])
-async def config_info():
-    return config.get_all()
 
 
 if __name__ == "__main__":

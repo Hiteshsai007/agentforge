@@ -16,8 +16,8 @@ from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from ..db.supabase_client import get_supabase
-from ..models import (
+from db.supabase_client import get_supabase
+from models import (
     AddAgentRequest,
     UpdateAgentSettingsRequest,
     CredentialGenerateRequest,
@@ -25,9 +25,9 @@ from ..models import (
     CredentialStatusResponse,
     CredentialRotateRequest,
 )
-from ..engine.feedback import check_marketplace_updates, apply_auto_updates
-from ..services.credentials import CredentialManager
-from ..services.email_service import EmailService
+from engine.feedback import check_marketplace_updates, apply_auto_updates
+from services.credentials import CredentialManager
+from services.email_service import EmailService
 
 router = APIRouter()
 
