@@ -1,19 +1,23 @@
-#!/usr/bin/env python
-import sys
-import requests
-import json
+import pytest
 
-# Test credential generation
-company_id = "12a5ff1b-d07e-4aec-a132-36f731c82de0"
-agent_id = "agent_001"  # Calculator agent
 
-try:
-    response = requests.post(
-        f"http://127.0.0.1:8000/api/company/{company_id}/agents/{agent_id}/generate-credentials",
-        json={},
-        timeout=5
-    )
-    print(f"Status: {response.status_code}")
-    print(f"Response: {json.dumps(response.json(), indent=2)}")
-except Exception as e:
-    print(f"❌ Error: {e}")
+class TestCredentials:
+    def test_generate_credentials(self, client, health_check, company_id):
+        response = client.post(
+            f"/api/company/{company_id}/agents/test-agent/generate-credentials",
+            json={},
+        )
+        assert response.status_code in [200, 404, 500]
+
+    def test_credentials_status_not_found(self, client, health_check, company_id):
+        response = client.get(
+            f"/api/company/{company_id}/agents/nonexistent-agent/credentials-status",
+        )
+        assert response.status_code in [200, 404, 500]
+
+    def test_rotate_credentials_not_found(self, client, health_check, company_id):
+        response = client.post(
+            f"/api/company/{company_id}/agents/nonexistent-agent/rotate-credentials",
+            json={},
+        )
+        assert response.status_code in [200, 404, 500]

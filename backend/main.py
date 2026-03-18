@@ -1,10 +1,6 @@
 """
 AI Agent Marketplace + Intent Router — FastAPI Backend
 Main application entry point.
-
-Works with both:
-- python main.py (from backend directory)
-- python -m backend.main (from project root)
 """
 
 import sys
@@ -28,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import config
@@ -54,27 +50,28 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-origins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://localhost:3000",
-    "http://localhost:8013",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:8013",
-    "*",  # Allow all for development
-]
-
-if config.CORS_ORIGINS:
-    origins.extend([o.strip() for o in config.CORS_ORIGINS if o.strip()])
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_cors_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    origin = request.headers.get("origin", "*")
+    response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Methods"] = (
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    )
+    response.headers["Access-Control-Allow-Headers"] = (
+        "Authorization, Content-Type, X-Company-API-Key, X-Agent-ID, X-Enable-Delegation"
+    )
+    return response
+
 
 app.include_router(intent_router, prefix="/api/intent")
 app.include_router(agent_router, prefix="/api/agent")
@@ -110,4 +107,4 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8013, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8013, reload=False)

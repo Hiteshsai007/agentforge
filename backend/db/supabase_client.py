@@ -2,12 +2,12 @@
 Custom REST client for Supabase.
 (Bypasses the official `supabase` pip package which fails to build on Python 3.14.x)
 """
+
 import os
 import httpx
 from typing import Optional
 from dotenv import load_dotenv
 
-# Load .env from the backend directory
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(dotenv_path=env_path)
 
@@ -23,7 +23,8 @@ class SupabaseTableQuery:
         self._order = []
         self._limit: Optional[int] = None
         self._on_conflict = None
-
+        self._last_status_code = None
+        self._last_response_body = None
 
     def select(self, columns="*"):
         self._select = columns
@@ -57,13 +58,11 @@ class SupabaseTableQuery:
         return self
 
     def in_(self, column, values):
-        # formatting for PostgreSQL IN: value1,value2,value3
         val_str = ",".join(str(v) for v in values)
         self.params[column] = f"in.({val_str})"
         return self
 
     def contains(self, column, array_values):
-        # formatting for PostgreSQL array contains: {value1,value2}
         val_str = ",".join(f'"{v}"' for v in array_values)
         self.params[column] = f"cs.{{{val_str}}}"
         return self
@@ -82,50 +81,57 @@ class SupabaseTableQuery:
             self.params["order"] = ",".join(self._order)
         if self._limit is not None:
             self.params["limit"] = str(self._limit)
-            
+
         url = f"{self.client.url}/rest/v1/{self.table_name}"
-        
-        # When doing POST/PATCH/DELETE missing 'Prefer: return=representation' means no data returned.
+
         if self.method in ["POST", "PATCH", "DELETE"]:
             existing_prefer = self.client.headers.get("Prefer", "")
             if existing_prefer:
-                self.client.headers["Prefer"] = f"{existing_prefer},return=representation"
+                self.client.headers["Prefer"] = (
+                    f"{existing_prefer},return=representation"
+                )
             else:
                 self.client.headers["Prefer"] = "return=representation"
 
-        response = httpx.request(
-            method=self.method,
-            url=url,
-            headers=self.client.headers,
-            params=self.params,
-            json=self.json_data,
-            timeout=15.0
-        )
-        
-        # Reset Prefer header
-        self.client.headers.pop("Prefer", None)
-        
-        response.raise_for_status()
-
-
-
-
-        
-        # Parse response
-        data = None
         try:
-            if response.text.strip():
-                data = response.json()
-            else:
+            response = httpx.request(
+                method=self.method,
+                url=url,
+                headers=self.client.headers,
+                params=self.params,
+                json=self.json_data,
+                timeout=15.0,
+            )
+            self.client.headers.pop("Prefer", None)
+            self._last_status_code = response.status_code
+            self._last_response_body = response.text
+
+            if response.status_code >= 400:
+                return SupabaseResponse(
+                    data=[], error=f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+
+            data = None
+            try:
+                if response.text.strip():
+                    data = response.json()
+                else:
+                    data = []
+            except Exception:
                 data = []
-        except Exception:
-            data = []
-            
-        return SupabaseResponse(data=data if isinstance(data, list) else [data])
+
+            return SupabaseResponse(data=data if isinstance(data, list) else [data])
+
+        except httpx.RequestError as e:
+            self.client.headers.pop("Prefer", None)
+            return SupabaseResponse(data=[], error=f"Request error: {str(e)}")
+
 
 class SupabaseResponse:
-    def __init__(self, data):
+    def __init__(self, data, error=None):
         self.data = data
+        self.error = error
+        self.count = len(data) if data else 0
 
 
 class CustomSupabaseClient:
@@ -144,6 +150,7 @@ class CustomSupabaseClient:
 
 _client_instance = None
 
+
 def get_supabase() -> CustomSupabaseClient:
     global _client_instance
     if _client_instance is None:
@@ -153,5 +160,3 @@ def get_supabase() -> CustomSupabaseClient:
             raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env")
         _client_instance = CustomSupabaseClient(url, key)
     return _client_instance
-
-
