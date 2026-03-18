@@ -196,3 +196,40 @@ export const getInviteCode = async () => {
   const { data } = await api.get('/api/auth/company/invite-code');
   return data as { company_id: string; company_name: string; invite_code: string };
 };
+
+// ── Company API Key ───────────────────────────────────────────────────────────────
+export const generateCompanyAPIKey = async (company_id: string, send_email: boolean = true) => {
+  const { data } = await api.post(
+    `/api/company/${company_id}/generate-api-key`,
+    { send_email }
+  );
+  return data as { success: boolean; message: string; api_key?: string; api_key_masked?: string };
+};
+
+export const revokeCompanyAPIKey = async (company_id: string) => {
+  const { data } = await api.post(`/api/company/${company_id}/revoke-api-key`, {});
+  return data as { success: boolean; message: string };
+};
+
+export const getCompanyAPIKeyStatus = async (company_id: string) => {
+  const { data } = await api.get(`/api/company/${company_id}/api-key-status`);
+  return data as { api_key_status: string; api_key_expiry_date: string | null; has_active_key: boolean };
+};
+
+// ── Available Upgrades (Evolution) ─────────────────────────────────────────────────
+export const getAvailableUpgrades = async (company_id: string) => {
+  const { data } = await api.get(`/api/company/${company_id}/available-upgrades`);
+  return data as {
+    has_upgrades: boolean;
+    upgrades: Array<{
+      current_agent_id: string;
+      current_version: string;
+      new_agent_id: string;
+      new_agent_name: string;
+      new_version: string;
+      changelog: string | null;
+      auto_update_enabled: boolean;
+    }>;
+    count: number;
+  };
+};
