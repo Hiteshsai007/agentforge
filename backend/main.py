@@ -54,18 +54,19 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-origins = list(
-    set(
-        [
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:5175",
-            "http://localhost:3000",
-            "http://127.0.0.1:5173",
-        ]
-        + [o.strip() for o in config.CORS_ORIGINS if o.strip()]
-    )
-)
+origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:3000",
+    "http://localhost:8013",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8013",
+    "*",  # Allow all for development
+]
+
+if config.CORS_ORIGINS:
+    origins.extend([o.strip() for o in config.CORS_ORIGINS if o.strip()])
 
 app.add_middleware(
     CORSMiddleware,
