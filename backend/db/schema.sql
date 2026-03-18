@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS companies (
     company_name VARCHAR(255)  NOT NULL,
     invite_code  VARCHAR(50)   UNIQUE,
     created_at   TIMESTAMP     NOT NULL DEFAULT NOW(),
+    api_key_hash VARCHAR(255),
+    secret_key_hash VARCHAR(255),
+    api_key_expiry_date TIMESTAMP,
+    api_key_status VARCHAR(20) DEFAULT 'inactive',
     settings     JSONB         NOT NULL DEFAULT '{
         "llm_provider": "gemini",
         "llm_model": "gemini-2.0-flash",
@@ -95,6 +99,8 @@ CREATE TABLE IF NOT EXISTS company_agents (
     last_used_at         TIMESTAMP,
     total_execution_time DECIMAL(12,3)         DEFAULT 0,
     total_cost           DECIMAL(10,4)         DEFAULT 0,
+    can_delegate        BOOLEAN      NOT NULL DEFAULT TRUE,
+    delegation_config   JSONB        NOT NULL DEFAULT '{"max_depth": 3, "allowed_agents": [], "blocked_agents": []}'::jsonb,
     settings             JSONB        NOT NULL DEFAULT '{
         "quality_privacy": "private"
     }'::jsonb,

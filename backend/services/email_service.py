@@ -1,6 +1,7 @@
 """
 Email service abstraction - supports multiple providers (SendGrid, SMTP, logging).
 """
+
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -35,14 +36,14 @@ class LoggingEmailProvider(EmailProvider):
         html_body: str,
         plain_text: str = "",
     ) -> bool:
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * 70}")
         print(f"📧 EMAIL (DEV MODE)")
-        print(f"{'='*70}")
+        print(f"{'=' * 70}")
         print(f"To: {to_email}")
         print(f"Subject: {subject}")
-        print(f"{'='*70}")
+        print(f"{'=' * 70}")
         print(html_body if html_body else plain_text)
-        print(f"{'='*70}\n")
+        print(f"{'=' * 70}\n")
         return True
 
 
@@ -54,6 +55,7 @@ class SendGridEmailProvider(EmailProvider):
         try:
             import sendgrid
             from sendgrid.helpers.mail import Mail, Email, To, Content
+
             self.Mail = Mail
             self.Email = Email
             self.To = To
@@ -153,7 +155,9 @@ class EmailService:
             smtp_user = os.getenv("SMTP_USER", "")
             smtp_pass = os.getenv("SMTP_PASSWORD", "")
             if smtp_user and smtp_pass:
-                cls._provider = SMTPEmailProvider(smtp_host, smtp_port, smtp_user, smtp_pass)
+                cls._provider = SMTPEmailProvider(
+                    smtp_host, smtp_port, smtp_user, smtp_pass
+                )
             else:
                 cls._provider = LoggingEmailProvider()
         else:
@@ -290,6 +294,55 @@ IMPORTANT: Update your applications to use the new API key immediately.
 Old credentials have been revoked.
 
 Contact support@agentforge.example.com with questions.
+        """
+
+        return await cls._provider.send_email(to_email, subject, html_body, plain_text)
+
+    @classmethod
+    async def send_company_api_key_email(
+        cls,
+        to_email: str,
+        api_key: str,
+        secret_key: str,
+        company_name: str,
+        expiry_date: str,
+    ) -> bool:
+        """Send company API key email."""
+        if cls._provider is None:
+            cls.configure()
+
+        subject = f"Your Company API Key - {company_name}"
+        html_body = f"""
+        <h2>Company API Key Generated</h2>
+        <p>Your company API key for <strong>{company_name}</strong> has been generated.</p>
+        <hr />
+        <h3>API Credentials</h3>
+        <p><strong>API Key:</strong><br /><code>{api_key}</code></p>
+        <p><strong>Secret Key:</strong><br /><code>{secret_key}</code></p>
+        <hr />
+        <p><strong>Expiry Date:</strong> {expiry_date}</p>
+        <p><strong>⚠️ Important:</strong></p>
+        <ul>
+            <li>Store these credentials securely. They will not be shown again.</li>
+            <li>Use the header <code>X-Company-API-Key: {api_key}</code> when calling the API.</li>
+            <li>Optionally include <code>X-Agent-ID: agent_uuid</code> to specify which agent to use.</li>
+            <li>Keep your secret key confidential.</li>
+        </ul>
+        <p>Questions? Contact support@agentforge.example.com</p>
+        """
+
+        plain_text = f"""
+Your Company API Key for {company_name}
+
+API Key: {api_key}
+Secret Key: {secret_key}
+Expiry Date: {expiry_date}
+
+IMPORTANT: Store these credentials securely. They will not be shown again.
+Use the header X-Company-API-Key: {api_key} when calling the API.
+Optionally include X-Agent-ID: agent_uuid to specify which agent to use.
+
+Questions? Contact support@agentforge.example.com
         """
 
         return await cls._provider.send_email(to_email, subject, html_body, plain_text)
