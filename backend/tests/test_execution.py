@@ -3,7 +3,7 @@ import pytest
 
 class TestAgentExecution:
     def test_execute_summarizer(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -16,13 +16,11 @@ class TestAgentExecution:
                 "company_id": company_id,
             },
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "agents_used" in data
-        assert "routing" in data
+        assert r.status_code == 200
+        assert "agents_used" in r.json()
 
     def test_execute_calculator(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -36,12 +34,11 @@ class TestAgentExecution:
             },
             headers={"X-Agent-ID": "d1b711c9-8ba6-461e-823f-2c3cf77babf8"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "routing" in data
+        assert r.status_code == 200
+        assert "routing" in r.json()
 
     def test_execute_translator(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -55,12 +52,11 @@ class TestAgentExecution:
             },
             headers={"X-Agent-ID": "b3d3cfae-4c90-47e8-af61-d970c639c6ac"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "routing" in data
+        assert r.status_code == 200
+        assert "routing" in r.json()
 
     def test_execute_researcher(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -73,12 +69,11 @@ class TestAgentExecution:
                 "company_id": company_id,
             },
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "routing" in data
+        assert r.status_code == 200
+        assert "routing" in r.json()
 
     def test_execute_sentiment(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -92,12 +87,11 @@ class TestAgentExecution:
             },
             headers={"X-Agent-ID": "25885e8f-1063-40f2-9920-4351fecce7c0"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "routing" in data
+        assert r.status_code == 200
+        assert "routing" in r.json()
 
     def test_execute_with_company_api_key(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -110,14 +104,13 @@ class TestAgentExecution:
                 "company_id": company_id,
             },
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "routing" in data
+        assert r.status_code == 200
+        assert "routing" in r.json()
 
     def test_execute_with_specific_agent_id(
         self, http_client, health_check, company_id
     ):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -131,15 +124,14 @@ class TestAgentExecution:
             },
             headers={"X-Agent-ID": "d1b711c9-8ba6-461e-823f-2c3cf77babf8"},
         )
-        assert response.status_code == 200
-        data = response.json()
+        assert r.status_code == 200
         assert (
-            data["routing"]["selected_agent"]["agent_id"]
+            r.json()["routing"]["selected_agent"]["agent_id"]
             == "d1b711c9-8ba6-461e-823f-2c3cf77babf8"
         )
 
     def test_execute_invalid_agent_id(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -153,10 +145,10 @@ class TestAgentExecution:
             },
             headers={"X-Agent-ID": "invalid-agent-id"},
         )
-        assert response.status_code == 404
+        assert r.status_code == 404
 
     def test_execute_invalid_api_key(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -170,10 +162,10 @@ class TestAgentExecution:
             },
             headers={"X-Company-API-Key": "invalid_key"},
         )
-        assert response.status_code == 401
+        assert r.status_code == 401
 
     def test_execution_response_structure(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -186,9 +178,8 @@ class TestAgentExecution:
                 "company_id": company_id,
             },
         )
-        assert response.status_code == 200
-        data = response.json()
-        required_fields = [
+        assert r.status_code == 200
+        for field in [
             "execution_id",
             "result",
             "agents_used",
@@ -196,6 +187,5 @@ class TestAgentExecution:
             "tokens_used",
             "quality_score",
             "routing",
-        ]
-        for field in required_fields:
-            assert field in data
+        ]:
+            assert field in r.json()

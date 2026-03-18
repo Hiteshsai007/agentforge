@@ -4,11 +4,11 @@ import pytest
 @pytest.mark.delegation
 class TestAgentDelegation:
     def test_delegation_enabled(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
-                    "intent": "research and summarize",
+                    "intent": "research",
                     "task_type": "complex",
                     "required_capability": "research",
                     "original_request": "test",
@@ -18,12 +18,11 @@ class TestAgentDelegation:
             },
             headers={"X-Enable-Delegation": "true"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "agents_used" in data
+        assert r.status_code == 200
+        assert "agents_used" in r.json()
 
     def test_delegation_disabled(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
@@ -36,16 +35,15 @@ class TestAgentDelegation:
                 "company_id": company_id,
             },
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "agents_used" in data
+        assert r.status_code == 200
+        assert "agents_used" in r.json()
 
     def test_delegation_chain_comparison(self, http_client, health_check, company_id):
-        response_delegation = http_client.post(
+        r1 = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
-                    "intent": "research and summarize",
+                    "intent": "research",
                     "task_type": "complex",
                     "required_capability": "research",
                     "original_request": "test",
@@ -55,11 +53,11 @@ class TestAgentDelegation:
             },
             headers={"X-Enable-Delegation": "true"},
         )
-        response_single = http_client.post(
+        r2 = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
-                    "intent": "research and summarize",
+                    "intent": "research",
                     "task_type": "complex",
                     "required_capability": "research",
                     "original_request": "test",
@@ -68,15 +66,15 @@ class TestAgentDelegation:
                 "company_id": company_id,
             },
         )
-        assert response_delegation.status_code == 200
-        assert response_single.status_code == 200
+        assert r1.status_code == 200
+        assert r2.status_code == 200
 
     def test_delegation_quality_score(self, http_client, health_check, company_id):
-        response = http_client.post(
+        r = http_client.post(
             "/api/agent/execute",
             json={
                 "intent": {
-                    "intent": "research and summarize",
+                    "intent": "research",
                     "task_type": "complex",
                     "required_capability": "research",
                     "original_request": "test",
@@ -86,13 +84,12 @@ class TestAgentDelegation:
             },
             headers={"X-Enable-Delegation": "true"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert "quality_score" in data
+        assert r.status_code == 200
+        assert "quality_score" in r.json()
 
     def test_delegation_header_variations(self, http_client, health_check, company_id):
-        for value in ["true", "True", "1", "yes"]:
-            response = http_client.post(
+        for v in ["true", "True", "1", "yes"]:
+            r = http_client.post(
                 "/api/agent/execute",
                 json={
                     "intent": {
@@ -104,6 +101,6 @@ class TestAgentDelegation:
                     },
                     "company_id": company_id,
                 },
-                headers={"X-Enable-Delegation": value},
+                headers={"X-Enable-Delegation": v},
             )
-            assert response.status_code == 200
+            assert r.status_code == 200

@@ -3,49 +3,37 @@ import pytest
 
 class TestIntentParsing:
     def test_parse_summarize(self, http_client, health_check):
-        response = http_client.post(
-            "/api/intent/parse", json={"request": "Summarize this document"}
-        )
-        assert response.status_code == 200
+        r = http_client.post("/api/intent/parse", json={"request": "Summarize"})
+        assert r.status_code == 200
 
     def test_parse_calculate(self, http_client, health_check):
-        response = http_client.post(
-            "/api/intent/parse", json={"request": "What is 15 * 23 + 100?"}
-        )
-        assert response.status_code == 200
+        r = http_client.post("/api/intent/parse", json={"request": "What is 2+2?"})
+        assert r.status_code == 200
 
     def test_parse_translate(self, http_client, health_check):
-        response = http_client.post(
-            "/api/intent/parse", json={"request": "Translate this to Spanish"}
+        r = http_client.post(
+            "/api/intent/parse", json={"request": "Translate to Spanish"}
         )
-        assert response.status_code == 200
+        assert r.status_code == 200
 
     def test_parse_research(self, http_client, health_check):
-        response = http_client.post(
-            "/api/intent/parse", json={"request": "Research the latest AI trends"}
-        )
-        assert response.status_code == 200
+        r = http_client.post("/api/intent/parse", json={"request": "Research AI"})
+        assert r.status_code == 200
 
     def test_parse_sentiment(self, http_client, health_check):
-        response = http_client.post(
-            "/api/intent/parse",
-            json={"request": "Analyze the sentiment of this review"},
-        )
-        assert response.status_code == 200
+        r = http_client.post("/api/intent/parse", json={"request": "Analyze sentiment"})
+        assert r.status_code == 200
 
     def test_parse_intent_structure(self, http_client, health_check):
-        response = http_client.post(
-            "/api/intent/parse", json={"request": "Summarize this"}
-        )
-        assert response.status_code == 200
+        r = http_client.post("/api/intent/parse", json={"request": "Summarize"})
+        assert r.status_code == 200
 
     def test_parse_complex_request(self, http_client, health_check):
-        response = http_client.post(
-            "/api/intent/parse",
-            json={"request": "Research AI trends and create a summary"},
+        r = http_client.post(
+            "/api/intent/parse", json={"request": "Research and summarize"}
         )
-        assert response.status_code == 200
+        assert r.status_code == 200
 
     def test_parse_empty_request(self, http_client, health_check):
-        response = http_client.post("/api/intent/parse", json={"request": ""})
-        assert response.status_code in [200, 400]
+        r = http_client.post("/api/intent/parse", json={"request": ""})
+        assert r.status_code in [200, 400]
