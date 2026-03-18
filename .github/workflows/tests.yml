@@ -50,6 +50,8 @@ jobs:
           export TEST_BASE_URL="http://localhost:8013"
           export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
           export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
+          export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+          export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
           nohup .venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8013 &
           sleep 10
 
@@ -72,6 +74,8 @@ jobs:
           export TEST_BASE_URL="http://localhost:8013"
           export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
           export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
+          export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+          export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
           pytest backend/tests/ -v --cov=backend --cov-report=xml --cov-report=html --cov-report=term
 
       - name: Upload coverage to Codecov
@@ -154,6 +158,8 @@ jobs:
           source .venv/bin/activate
           export PYTHONPATH="$(pwd):$PYTHONPATH"
           export TEST_BASE_URL="http://localhost:8013"
+          export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+          export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
           nohup .venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8013 &
           sleep 10
 
@@ -163,4 +169,6 @@ jobs:
           export TEST_BASE_URL="http://localhost:8013"
           export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
           export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
+          export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+          export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
           pytest backend/tests/ -v -m ${{ matrix.feature }}
