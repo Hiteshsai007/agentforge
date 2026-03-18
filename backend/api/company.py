@@ -518,8 +518,8 @@ async def generate_company_api_key(
     # Generate new API key pair
     api_key = CredentialManager.generate_api_key(prefix="sk_company")
     secret_key = CredentialManager.generate_secret_key()
-    api_key_hash = CredentialManager.hash_key(api_key)
-    secret_key_hash = CredentialManager.hash_key(secret_key)
+    api_key_hash = CredentialManager.hash_key_for_lookup(api_key)
+    secret_key_hash = CredentialManager.hash_key_for_lookup(secret_key)
 
     # Calculate expiry (365 days from now)
     from datetime import timedelta
@@ -559,7 +559,7 @@ async def generate_company_api_key(
     return CompanyAPIKeyResponse(
         success=True,
         message="Company API key generated successfully",
-        api_key=api_key if send_email else None,
+        api_key=api_key,  # Show for testing
         api_key_masked=CredentialManager.mask_api_key(api_key),
     )
 

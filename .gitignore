@@ -1,7 +1,12 @@
 # Environment Variables
 .env
 .env.*
+.env.local
 !.env.example
+
+# Test secrets (never commit!)
+test.env
+*.test.env
 
 # Python
 __pycache__/
@@ -23,6 +28,11 @@ coverage.xml
 *.log
 .mypy_cache/
 .pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage*
+coverage-badge.svg
 
 # Node / Frontend
 node_modules/
@@ -46,3 +56,10 @@ Thumbs.db
 # Project specific
 supabase_debug.log
 tests/__pycache__/
+
+# Secrets (never commit these!)
+*secret*
+*api_key*
+*.key
+credentials.json
+

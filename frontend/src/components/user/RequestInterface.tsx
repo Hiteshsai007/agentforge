@@ -13,6 +13,7 @@ export default function RequestInterface({ companyId, userId }: Props) {
   const [request, setRequest] = useState('');
   const [loading, setLoading] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [delegationEnabled, setDelegationEnabled] = useState(false);
 
   const [intent, setIntent] = useState<Intent | null>(null);
   const [execution, setExecution] = useState<ExecutionResult | null>(null);
@@ -46,8 +47,8 @@ export default function RequestInterface({ companyId, userId }: Props) {
       setParsing(false);
       setLoading(true);
 
-      // 2. Execute
-      const execRes = await executeAgent(parseRes.intent, companyId, userId);
+      // 2. Execute with delegation option
+      const execRes = await executeAgent(parseRes.intent, companyId, userId, delegationEnabled);
       setExecution(execRes);
 
       if (!execRes.success && !execRes.routing?.is_multi_agent) {
@@ -99,6 +100,21 @@ export default function RequestInterface({ companyId, userId }: Props) {
             className="w-full bg-transparent border-none resize-none focus:outline-none focus:ring-0 text-white p-4 h-32 md:h-16 lead text-lg"
             disabled={parsing || loading}
           />
+          
+          {/* Delegation Toggle */}
+          <div className="absolute bottom-4 left-4 flex items-center gap-2">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={delegationEnabled}
+                onChange={(e) => setDelegationEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+              <span className="ml-2 text-xs text-gray-400">Agent Delegation</span>
+            </label>
+          </div>
+
           <div className="absolute bottom-4 right-4 flex items-center gap-2">
             <span className="text-xs text-gray-500 font-mono hidden md:inline">Press Enter ↵</span>
             <button

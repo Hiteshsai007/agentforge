@@ -174,17 +174,18 @@ export default function CompanyAPISettings({ companyId }: Props) {
         {/* Usage Instructions */}
         <div className="mt-6 pt-6 border-t border-white/10">
           <h3 className="text-sm font-semibold text-gray-300 mb-3">How to use:</h3>
-          <div className="bg-black/30 rounded-lg p-4 font-mono text-xs text-gray-400 space-y-2">
-            <p><span className="text-indigo-400"># Auto-route to best agent:</span></p>
-            <p>curl -X POST https://api.agentforge.com/agent/execute \</p>
-            <p>&nbsp;&nbsp;-H "X-Company-API-Key: sk_company_xxxxx" \</p>
-            <p>&nbsp;&nbsp;-d '{"task": "summarize this", "company_id": "..."}'</p>
-            <p className="mt-3"><span className="text-indigo-400"># Use specific agent:</span></p>
-            <p>curl -X POST https://api.agentforge.com/agent/execute \</p>
-            <p>&nbsp;&nbsp;-H "X-Company-API-Key: sk_company_xxxxx" \</p>
-            <p>&nbsp;&nbsp;-H "X-Agent-ID: agent_uuid" \</p>
-            <p>&nbsp;&nbsp;-d '{"task": "summarize this", "company_id": "..."}'</p>
-          </div>
+          <pre className="bg-black/40 rounded-lg p-4 font-mono text-xs text-gray-400 overflow-x-auto">
+{`# Auto-route to best agent:
+curl -X POST https://api.agentforge.com/agent/execute \\
+  -H "X-Company-API-Key: sk_company_xxxxx" \\
+  -d '{"task": "summarize this", "company_id": "..."}'
+
+# Use specific agent:
+curl -X POST https://api.agentforge.com/agent/execute \\
+  -H "X-Company-API-Key: sk_company_xxxxx" \\
+  -H "X-Agent-ID: agent_uuid" \\
+  -d '{"task": "summarize this", "company_id": "..."}'`}
+          </pre>
         </div>
       </div>
 

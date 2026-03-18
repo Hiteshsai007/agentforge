@@ -1,9 +1,11 @@
 """
 Credentials management service - generates, hashes, rotates API credentials.
 """
+
 import os
 import secrets
 import string
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Dict, Any
 from dotenv import load_dotenv
@@ -13,10 +15,10 @@ load_dotenv()
 # Use bcrypt for production, or simple hash fallback
 try:
     import bcrypt
+
     HAS_BCRYPT = True
 except ImportError:
     HAS_BCRYPT = False
-    import hashlib
 
 
 class CredentialManager:
@@ -43,13 +45,19 @@ class CredentialManager:
 
     @staticmethod
     def hash_key(key: str) -> str:
-        """Hash an API key or secret key for storage."""
+        """Hash an API key or secret key for storage (uses bcrypt for per-key salts)."""
         if HAS_BCRYPT:
             salt = bcrypt.gensalt(rounds=12)
-            return bcrypt.hashpw(key.encode('utf-8'), salt).decode('utf-8')
+            return bcrypt.hashpw(key.encode("utf-8"), salt).decode("utf-8")
         else:
             # Fallback: use SHA256 (less secure, but works)
-            return hashlib.sha256(key.encode('utf-8')).hexdigest()
+            return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def hash_key_for_lookup(key: str) -> str:
+        """Deterministic hash for API key lookup (uses SHA256, no salt).
+        This is used for company API keys where we need to look up by hash."""
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
     @staticmethod
     def verify_key(plaintext_key: str, hashed_key: str) -> bool:
@@ -58,12 +66,16 @@ class CredentialManager:
             return False
         if HAS_BCRYPT:
             try:
-                return bcrypt.checkpw(plaintext_key.encode('utf-8'), hashed_key.encode('utf-8'))
+                return bcrypt.checkpw(
+                    plaintext_key.encode("utf-8"), hashed_key.encode("utf-8")
+                )
             except Exception:
                 return False
         else:
             # Fallback: compare SHA256 hashes
-            return hashlib.sha256(plaintext_key.encode('utf-8')).hexdigest() == hashed_key
+            return (
+                hashlib.sha256(plaintext_key.encode("utf-8")).hexdigest() == hashed_key
+            )
 
     @staticmethod
     def mask_api_key(api_key: str) -> str:
@@ -106,67 +118,77 @@ class CredentialManager:
         Returns dict with valid, company_id, agent_id, error.
         """
         from ..db.supabase_client import get_supabase
-        
+
         db = get_supabase()
-        
+
         if not api_key or not secret_key:
             return {
                 "valid": False,
                 "company_id": None,
                 "agent_id": None,
-                "error": "Both api_key and secret_key are required"
+                "error": "Both api_key and secret_key are required",
             }
-        
-        result = db.table("agent_credentials").select(
-            "credential_id, company_id, agent_id, expiry_date, rotation_status, api_key_hash, secret_key_hash"
-        ).execute()
-        
+
+        result = (
+            db.table("agent_credentials")
+            .select(
+                "credential_id, company_id, agent_id, expiry_date, rotation_status, api_key_hash, secret_key_hash"
+            )
+            .execute()
+        )
+
         if not result.data:
             return {
                 "valid": False,
                 "company_id": None,
                 "agent_id": None,
-                "error": "Invalid API key"
+                "error": "Invalid API key",
             }
-        
+
         for cred in result.data:
             if cred.get("rotation_status") == "rotating":
                 continue
-            
+
             try:
-                if not CredentialManager.verify_key(api_key, cred.get("api_key_hash", "")):
+                if not CredentialManager.verify_key(
+                    api_key, cred.get("api_key_hash", "")
+                ):
                     continue
             except Exception:
                 continue
-            
+
             try:
-                if not CredentialManager.verify_key(secret_key, cred.get("secret_key_hash", "")):
+                if not CredentialManager.verify_key(
+                    secret_key, cred.get("secret_key_hash", "")
+                ):
                     continue
             except Exception:
                 continue
-            
+
             try:
-                expiry_date = datetime.fromisoformat(cred["expiry_date"].replace("Z", "+00:00"))
+                expiry_date = datetime.fromisoformat(
+                    cred["expiry_date"].replace("Z", "+00:00")
+                )
                 if expiry_date.replace(tzinfo=None) < datetime.now():
                     return {
                         "valid": False,
                         "company_id": None,
                         "agent_id": None,
-                        "error": "Credentials have expired"
+                        "error": "Credentials have expired",
                     }
             except Exception:
                 pass
-            
+
             return {
                 "valid": True,
                 "company_id": cred["company_id"],
                 "agent_id": cred["agent_id"],
-                "error": None
+                "error": None,
             }
-        
+
         return {
             "valid": False,
             "company_id": None,
             "agent_id": None,
-            "error": "Invalid API key or secret key"
+            "error": "Invalid API key or secret key",
         }
