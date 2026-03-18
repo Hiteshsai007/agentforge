@@ -5,6 +5,7 @@ import AgentCard from './AgentCard';
 import Marketplace from './Marketplace';
 import OnboardingWizard from './OnboardingWizard';
 import UpdateNotification from './UpdateNotification';
+import CompanyAPISettings from './CompanyAPISettings';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -18,6 +19,7 @@ export default function Dashboard({ companyId, userEmail }: Props) {
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [manualUpdates, setManualUpdates] = useState<MarketplaceUpdate[]>([]);
   const [showUpdateModal, setShowUpdateModal] = useState<MarketplaceUpdate | null>(null);
+  const [showAPISettings, setShowAPISettings] = useState(false);
 
   const fetchDashboard = async () => {
     setLoading(true);
@@ -73,8 +75,16 @@ export default function Dashboard({ companyId, userEmail }: Props) {
       {/* Header Bar */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Agent Portfolio</h1>
-          <p className="text-[var(--text-secondary)] mt-1">Manage your company's active AI agents automatically.</p>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+            {showAPISettings ? 'API Settings' : showMarketplace ? 'Marketplace' : 'Agent Portfolio'}
+          </h1>
+          <p className="text-[var(--text-secondary)] mt-1">
+            {showAPISettings 
+              ? 'Manage your company API key and view available upgrades'
+              : showMarketplace 
+                ? 'Browse and add new AI agents to your portfolio'
+                : 'Manage your company\'s active AI agents automatically.'}
+          </p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -89,6 +99,17 @@ export default function Dashboard({ companyId, userEmail }: Props) {
           )}
           
           <button 
+            onClick={() => setShowAPISettings(!showAPISettings)}
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 font-medium transition-colors ${
+              showAPISettings 
+                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' 
+                : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            ⚙️ API Settings
+          </button>
+          
+          <button 
             onClick={() => setShowMarketplace(!showMarketplace)}
             className="primary-btn flex items-center gap-2"
           >
@@ -101,7 +122,9 @@ export default function Dashboard({ companyId, userEmail }: Props) {
 
       {/* Main Content */}
       <div className="relative">
-        {showMarketplace ? (
+        {showAPISettings ? (
+          <CompanyAPISettings companyId={companyId} />
+        ) : showMarketplace ? (
           <Marketplace companyId={companyId} onAgentAdded={fetchDashboard} existingAgentIds={agents.map(a => a.agent_id)} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

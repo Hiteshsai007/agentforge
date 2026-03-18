@@ -9,7 +9,7 @@ from typing import Optional
 from ..models import ExecuteRequest, ExecutionResult, RoutingDecision
 from ..engine.intent_parser import parse_intent
 from ..engine.router import route_intent
-from ..engine.executor import execute_agent
+from ..engine.executor import execute_agent, execute_with_delegation
 from ..engine.feedback import record_execution
 from ..services.credentials import CredentialManager
 from ..db.supabase_client import get_supabase
@@ -24,6 +24,7 @@ async def execute(
     x_secret_key: Optional[str] = Header(None, alias="X-Secret-Key"),
     x_company_api_key: Optional[str] = Header(None, alias="X-Company-API-Key"),
     x_agent_id: Optional[str] = Header(None, alias="X-Agent-ID"),
+    x_enable_delegation: Optional[str] = Header(None, alias="X-Enable-Delegation"),
 ):
     # ── Verify credentials ───────────────────────────────────────────────
     company_id = body.company_id
@@ -31,7 +32,7 @@ async def execute(
     # Option 1: Company API Key (new)
     if x_company_api_key:
         db = get_supabase()
-        api_key_hash = CredentialManager.hash_key(x_company_api_key)
+        api_key_hash = CredentialManager.hash_key_for_lookup(x_company_api_key)
 
         # Find company with this API key
         company_result = (
@@ -67,15 +68,20 @@ async def execute(
         # If X-Agent-ID is provided, use that specific agent
         if x_agent_id:
             # Verify the agent belongs to this company
-            agent_result = (
-                db.table("company_agents")
-                .select(
-                    "*, agents_marketplace(agent_id, agent_name, version, capabilities, description)"
+            try:
+                agent_result = (
+                    db.table("company_agents")
+                    .select(
+                        "*, agents_marketplace(agent_id, agent_name, version, capabilities, description)"
+                    )
+                    .eq("company_id", company_id)
+                    .eq("agent_id", x_agent_id)
+                    .execute()
                 )
-                .eq("company_id", company_id)
-                .eq("agent_id", x_agent_id)
-                .execute()
-            )
+            except Exception:
+                raise HTTPException(
+                    status_code=404, detail="Agent not found in company portfolio"
+                )
 
             if not agent_result.data:
                 raise HTTPException(
@@ -109,15 +115,20 @@ async def execute(
     # If specific agent ID provided (company API key mode), use that agent directly
     if x_agent_id and company_id:
         db = get_supabase()
-        agent_result = (
-            db.table("company_agents")
-            .select(
-                "*, agents_marketplace(agent_id, agent_name, version, capabilities, description, provider, pricing_model)"
+        try:
+            agent_result = (
+                db.table("company_agents")
+                .select(
+                    "*, agents_marketplace(agent_id, agent_name, version, capabilities, description, provider, pricing_model)"
+                )
+                .eq("company_id", company_id)
+                .eq("agent_id", x_agent_id)
+                .execute()
             )
-            .eq("company_id", company_id)
-            .eq("agent_id", x_agent_id)
-            .execute()
-        )
+        except Exception as e:
+            raise HTTPException(
+                status_code=404, detail="Agent not found in company portfolio"
+            )
 
         if not agent_result.data or not agent_result.data[0].get("agents_marketplace"):
             raise HTTPException(
@@ -215,11 +226,30 @@ async def execute(
             )
             task_desc = f"{task_desc}\n\nParameters: {param_str}"
 
-        result = execute_agent(
-            task_description=task_desc,
-            capabilities=agent.capabilities,
-            is_multi_agent=False,
+        # Check if delegation is enabled
+        enable_delegation = x_enable_delegation and x_enable_delegation.lower() in (
+            "true",
+            "1",
+            "yes",
         )
+
+        if enable_delegation:
+            # Use delegation execution
+            result = execute_with_delegation(
+                task=task_desc,
+                primary_agent_id=agent_id,
+                company_id=company_id,
+            )
+            # Update agents_used to include delegation chain
+            if result.get("delegation_chain"):
+                for del_agent_id in result["delegation_chain"]:
+                    agent_names.append(del_agent_id)
+        else:
+            result = execute_agent(
+                task_description=task_desc,
+                capabilities=agent.capabilities,
+                is_multi_agent=False,
+            )
 
     # ── Record feedback ─────────────────────────────────────────────
     new_quality = 0.5

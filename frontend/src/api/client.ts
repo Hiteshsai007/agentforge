@@ -25,8 +25,15 @@ export const parseIntent = async (request: string) => {
 };
 
 // ── Agent Execution ───────────────────────────────────────────────────────────
-export const executeAgent = async (intent: Intent, company_id: string, user_id?: string) => {
-  const { data } = await api.post('/api/agent/execute', { intent, company_id, user_id });
+export const executeAgent = async (
+  intent: Intent, 
+  company_id: string, 
+  user_id?: string,
+  enable_delegation: boolean = false
+) => {
+  const { data } = await api.post('/api/agent/execute', { intent, company_id, user_id }, {
+    headers: enable_delegation ? { 'X-Enable-Delegation': 'true' } : {},
+  });
   return data as ExecutionResult;
 };
 
