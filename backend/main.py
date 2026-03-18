@@ -1,21 +1,45 @@
 """
 AI Agent Marketplace + Intent Router — FastAPI Backend
 Main application entry point.
+
+Works with both:
+- cd backend && python main.py
+- cd project && python -m backend.main
 """
 
 import os
 import logging
+import sys
+from pathlib import Path
+
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import config
-from .api.intent import router as intent_router
-from .api.agent import router as agent_router
-from .api.marketplace import router as marketplace_router
-from .api.company import router as company_router
-from .api.admin import router as admin_router
-from .api.credentials import router as credentials_router
-from .api.auth import router as auth_router
+try:
+    from config import config
+except ImportError:
+    from backend.config import config
+
+try:
+    from api.intent import router as intent_router
+    from api.agent import router as agent_router
+    from api.marketplace import router as marketplace_router
+    from api.company import router as company_router
+    from api.admin import router as admin_router
+    from api.credentials import router as credentials_router
+    from api.auth import router as auth_router
+except ImportError:
+    from backend.api.intent import router as intent_router
+    from backend.api.agent import router as agent_router
+    from backend.api.marketplace import router as marketplace_router
+    from backend.api.company import router as company_router
+    from backend.api.admin import router as admin_router
+    from backend.api.credentials import router as credentials_router
+    from backend.api.auth import router as auth_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -99,4 +123,4 @@ async def config_info():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8013, reload=True)
