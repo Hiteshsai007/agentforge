@@ -2,16 +2,19 @@
 API: GET /api/marketplace/agents  — Browse marketplace
      POST /api/marketplace/register — Developer registers new agent
 """
+
 from fastapi import APIRouter, Query
-from ..models import RegisterAgentRequest
-from ..db.supabase_client import get_supabase
+from models import RegisterAgentRequest
+from db.supabase_client import get_supabase
 import httpx
 
 router = APIRouter()
 
 
 @router.get("/agents", tags=["Marketplace"])
-async def list_agents(capability: str = Query(default="", description="Filter by capability")):
+async def list_agents(
+    capability: str = Query(default="", description="Filter by capability"),
+):
     db = get_supabase()
     query = db.table("agents_marketplace").select("*").eq("is_available", True)
     if capability:
@@ -50,9 +53,11 @@ async def register_agent(body: RegisterAgentRequest):
     }
 
     try:
-        result = db.table("agents_marketplace").upsert(
-            agent_data, on_conflict="agent_name,version"
-        ).execute()
+        result = (
+            db.table("agents_marketplace")
+            .upsert(agent_data, on_conflict="agent_name,version")
+            .execute()
+        )
         agent_id = result.data[0]["agent_id"] if result.data else None
         return {
             "success": True,
@@ -68,9 +73,14 @@ async def register_agent(body: RegisterAgentRequest):
 @router.get("/capabilities", tags=["Marketplace"])
 async def list_capabilities():
     db = get_supabase()
-    result = db.table("agents_marketplace").select("capabilities").eq("is_available", True).execute()
+    result = (
+        db.table("agents_marketplace")
+        .select("capabilities")
+        .eq("is_available", True)
+        .execute()
+    )
     caps = set()
-    for row in (result.data or []):
-        for c in (row.get("capabilities") or []):
+    for row in result.data or []:
+        for c in row.get("capabilities") or []:
             caps.add(c)
     return {"capabilities": sorted(caps)}

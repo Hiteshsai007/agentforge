@@ -247,7 +247,7 @@ def can_delegate_to(
     Check if an agent can delegate to another agent in the company's portfolio.
     Returns (can_delegate, reason).
     """
-    from ..db.supabase_client import get_supabase
+    from db.supabase_client import get_supabase
 
     db = get_supabase()
 
@@ -292,7 +292,7 @@ def can_delegate_to(
 
 def get_delegation_depth(agent_id: str, company_id: str) -> int:
     """Get the current delegation depth limit for an agent."""
-    from ..db.supabase_client import get_supabase
+    from db.supabase_client import get_supabase
 
     db = get_supabase()
 
@@ -321,8 +321,8 @@ def delegate_task(
     """
     Delegate a task to another agent in the company's portfolio.
     """
-    from ..db.supabase_client import get_supabase
-    from ..models import AgentInfo
+    from db.supabase_client import get_supabase
+    from models import AgentInfo
 
     db = get_supabase()
 
@@ -386,7 +386,7 @@ def execute_with_delegation(
 
     The primary agent decides if it needs help from other agents based on the task complexity.
     """
-    from ..db.supabase_client import get_supabase
+    from db.supabase_client import get_supabase
 
     db = get_supabase()
 

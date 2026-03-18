@@ -1,8 +1,9 @@
 """
 API: GET /api/admin/metrics — programmer-only metrics endpoint
 """
+
 from fastapi import APIRouter, Query
-from ..db.supabase_client import get_supabase
+from db.supabase_client import get_supabase
 
 router = APIRouter()
 
@@ -22,8 +23,12 @@ async def get_metrics(
 
     total = len(rows)
     successes = sum(1 for r in rows if r.get("success"))
-    avg_quality = round(sum(r.get("quality_score") or 0 for r in rows) / max(total, 1), 3)
-    avg_time    = round(sum(r.get("execution_time_seconds") or 0 for r in rows) / max(total, 1), 2)
+    avg_quality = round(
+        sum(r.get("quality_score") or 0 for r in rows) / max(total, 1), 3
+    )
+    avg_time = round(
+        sum(r.get("execution_time_seconds") or 0 for r in rows) / max(total, 1), 2
+    )
     total_tokens = sum(r.get("tokens_used") or 0 for r in rows)
     estimated_cost = round(total_tokens * 0.000002, 4)
 
@@ -31,6 +36,7 @@ async def get_metrics(
 
     # Quality trend — group by day
     from collections import defaultdict
+
     daily: dict = defaultdict(list)
     for r in rows:
         day = (r.get("executed_at") or "")[:10]
@@ -44,7 +50,12 @@ async def get_metrics(
 
     agent_name = "All Agents"
     if agent_id:
-        ag = db.table("agents_marketplace").select("agent_name,version").eq("agent_id", agent_id).execute()
+        ag = (
+            db.table("agents_marketplace")
+            .select("agent_name,version")
+            .eq("agent_id", agent_id)
+            .execute()
+        )
         if ag.data:
             agent_name = f"{ag.data[0]['agent_name']} v{ag.data[0]['version']}"
 

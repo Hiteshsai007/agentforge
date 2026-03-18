@@ -2,23 +2,28 @@
 Intent Parser — converts natural language into structured Intent objects.
 Uses Gemini to parse the request into a structured JSON format.
 """
+
 import json
 import os
 import re
 from dotenv import load_dotenv
-from ..models import Intent, SubTask
+from models import Intent, SubTask
 
 load_dotenv()
 
 # Lazy-load genai to avoid Python 3.14 protobuf issues at import time
 _genai = None
+
+
 def _get_genai():
     global _genai
     if _genai is None:
         import google.generativeai as genai
+
         genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
         _genai = genai
     return _genai
+
 
 _SYSTEM_PROMPT = """You are an AI intent parser for an agent marketplace. 
 Parse user requests into structured JSON intents.
@@ -56,9 +61,13 @@ def rule_based_fallback(request: str) -> dict:
     Simple keyword-based intent detection when LLM is unavailable.
     """
     req = request.lower()
-    
+
     intent_map = {
-        "summarize": ("summarize_text", "summarization", "summarization,text_processing"),
+        "summarize": (
+            "summarize_text",
+            "summarization",
+            "summarization,text_processing",
+        ),
         "summary": ("summarize_text", "summarization", "summarization,text_processing"),
         "tl;dr": ("summarize_text", "summarization", "summarization,text_processing"),
         "research": ("research_topic", "research", "research,information_retrieval"),
@@ -66,29 +75,41 @@ def rule_based_fallback(request: str) -> dict:
         "search": ("research_topic", "research", "research,information_retrieval"),
         "calculate": ("calculate_math", "calculation", "mathematics,calculation"),
         "math": ("calculate_math", "calculation", "mathematics,calculation"),
-        "translate": ("translate_text", "translation", "translation,language_detection"),
-        "sentiment": ("analyze_sentiment", "sentiment_analysis", "sentiment_analysis,text_classification"),
-        "mood": ("analyze_sentiment", "sentiment_analysis", "sentiment_analysis,text_classification"),
+        "translate": (
+            "translate_text",
+            "translation",
+            "translation,language_detection",
+        ),
+        "sentiment": (
+            "analyze_sentiment",
+            "sentiment_analysis",
+            "sentiment_analysis,text_classification",
+        ),
+        "mood": (
+            "analyze_sentiment",
+            "sentiment_analysis",
+            "sentiment_analysis,text_classification",
+        ),
     }
-    
+
     # Default fallback
     detected = ("general_task", "other", "text_processing")
-    
+
     for kw, (intent_name, task_type, caps) in intent_map.items():
         if kw in req:
             detected = (intent_name, task_type, caps)
             break
-            
+
     return {
         "intent": detected[0],
         "task_type": detected[1],
         "required_capability": detected[2],
         "parameters": {"query": request},
         "original_request": request,
-        "confidence": 0.4, # Lower confidence for fallback
+        "confidence": 0.4,  # Lower confidence for fallback
         "is_multi_agent": False,
         "sub_tasks": [],
-        "warning": "Gemini API unavailable. Using rule-based fallback parser."
+        "warning": "Gemini API unavailable. Using rule-based fallback parser.",
     }
 
 
@@ -116,17 +137,24 @@ def parse_intent(request: str) -> dict:
         data = json.loads(raw)
 
         if data.get("error"):
-            return {"error": True, "message": data.get("message", "Could not parse request."), "suggestions": data.get("suggestions", []), "original_request": request}
+            return {
+                "error": True,
+                "message": data.get("message", "Could not parse request."),
+                "suggestions": data.get("suggestions", []),
+                "original_request": request,
+            }
 
         # Build sub_tasks
         sub_tasks = []
         for st in data.get("sub_tasks", []):
-            sub_tasks.append(SubTask(
-                step=st.get("step", 1),
-                intent=st.get("intent", ""),
-                required_capability=st.get("required_capability", ""),
-                parameters=st.get("parameters", {}),
-            ))
+            sub_tasks.append(
+                SubTask(
+                    step=st.get("step", 1),
+                    intent=st.get("intent", ""),
+                    required_capability=st.get("required_capability", ""),
+                    parameters=st.get("parameters", {}),
+                )
+            )
 
         intent = Intent(
             intent=data.get("intent", "unknown"),
@@ -146,7 +174,7 @@ def parse_intent(request: str) -> dict:
         if "429" in err_str or "quota" in err_str or "limit" in err_str:
             print(f"⚠️ Gemini API Quota Exceeded. Falling back to rule-based parser.")
             return rule_based_fallback(request)
-            
+
         return {
             "error": True,
             "message": f"Intent parser error: {str(e)}",

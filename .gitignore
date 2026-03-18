@@ -56,6 +56,17 @@ Thumbs.db
 # Project specific
 supabase_debug.log
 tests/__pycache__/
+backend/__pycache__/
+backend/tests/__pycache__/
+*.debug.log
+
+# Virtual environments (all variations)
+venv/
+.venv/
+env/
+ENV/
+.venv-*/
+venv*/
 
 # Secrets (never commit these!)
 *secret*

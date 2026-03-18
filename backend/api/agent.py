@@ -6,13 +6,13 @@ Orchestrates intent → routing → execution → feedback.
 import uuid
 from fastapi import APIRouter, Header, HTTPException
 from typing import Optional
-from ..models import ExecuteRequest, ExecutionResult, RoutingDecision
-from ..engine.intent_parser import parse_intent
-from ..engine.router import route_intent
-from ..engine.executor import execute_agent, execute_with_delegation
-from ..engine.feedback import record_execution
-from ..services.credentials import CredentialManager
-from ..db.supabase_client import get_supabase
+from models import ExecuteRequest, ExecutionResult, RoutingDecision
+from engine.intent_parser import parse_intent
+from engine.router import route_intent
+from engine.executor import execute_agent, execute_with_delegation
+from engine.feedback import record_execution
+from services.credentials import CredentialManager
+from db.supabase_client import get_supabase
 
 router = APIRouter()
 
@@ -139,7 +139,7 @@ async def execute(
         mp_data = agent_data["agents_marketplace"]
 
         # Create a RoutingDecision with the specific agent
-        from ..models import AgentInfo
+        from models import AgentInfo
 
         selected_agent = AgentInfo(
             agent_id=mp_data["agent_id"],
