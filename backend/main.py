@@ -2,44 +2,55 @@
 AI Agent Marketplace + Intent Router — FastAPI Backend
 Main application entry point.
 """
+
 import os
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 
-from .api.intent      import router as intent_router
-from .api.agent       import router as agent_router
+from .config import config
+from .api.intent import router as intent_router
+from .api.agent import router as agent_router
 from .api.marketplace import router as marketplace_router
-from .api.company     import router as company_router
-from .api.admin       import router as admin_router
+from .api.company import router as company_router
+from .api.admin import router as admin_router
 from .api.credentials import router as credentials_router
-from .api.auth        import router as auth_router
+from .api.auth import router as auth_router
 
-load_dotenv()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
-# Initialize email service on startup
-from .services.email_service import EmailService
-EmailService.configure()
+logger.info("Starting AI Agent Marketplace Backend v%s", config.APP_VERSION)
+
+config_errors = config.validate()
+if config_errors:
+    logger.warning("Configuration warnings: %s", config_errors)
 
 app = FastAPI(
-    title="AI Agent Marketplace + Intent Router",
-    description="Production-ready prototype of an AI Agent Marketplace with intelligent intent routing.",
-    version="2.0.0",
+    title=config.APP_NAME,
+    description="Enterprise AI Agent Marketplace with intelligent intent routing.",
+    version=config.APP_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
-# ── CORS ────────────────────────────────────────────────────────────────────────
-all_origins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-]
-extra = os.getenv("CORS_ORIGINS", "").split(",")
-origins = list(set(all_origins + [o.strip() for o in extra if o.strip()]))
+origins = list(
+    set(
+        [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:3000",
+            "http://127.0.0.1:5173",
+        ]
+        + [o.strip() for o in config.CORS_ORIGINS if o.strip()]
+    )
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -48,22 +59,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ─────────────────────────────────────────────────────────────────────
-app.include_router(intent_router,      prefix="/api/intent")
-app.include_router(agent_router,       prefix="/api/agent")
+app.include_router(intent_router, prefix="/api/intent")
+app.include_router(agent_router, prefix="/api/agent")
 app.include_router(marketplace_router, prefix="/api/marketplace")
-app.include_router(company_router,     prefix="/api/company")
-app.include_router(admin_router,       prefix="/api/admin")
+app.include_router(company_router, prefix="/api/company")
+app.include_router(admin_router, prefix="/api/admin")
 app.include_router(credentials_router, prefix="/api/credentials")
-app.include_router(auth_router,        prefix="/api/auth")
+app.include_router(auth_router, prefix="/api/auth")
+
+logger.info("API routes registered")
+
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Application startup complete")
+    logger.info("Config: %s", config.get_all())
 
 
 @app.get("/", tags=["Health"])
 async def root():
     return {
         "status": "ok",
-        "service": "AI Agent Marketplace + Intent Router",
-        "version": "2.0.0",
+        "service": config.APP_NAME,
+        "version": config.APP_VERSION,
         "docs": "/docs",
     }
 
@@ -73,6 +91,12 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/config", tags=["Health"])
+async def config_info():
+    return config.get_all()
+
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
