@@ -13,7 +13,7 @@ TEST_COMPANY_ID = os.environ.get(
     "TEST_COMPANY_ID", "12a5ff1b-d07e-4aec-a132-36f731c82de0"
 )
 TEST_API_KEY = os.environ.get(
-    "TEST_API_KEY", "sk_company_yo36u12W1rojetWyHJyn9yvyCwBK88Pe"
+    "TEST_API_KEY", "sk_company_G240ZmVfbOiMpWq6NwTIUYgzwdHjmGio"
 )
 
 
