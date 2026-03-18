@@ -1,18 +1,9 @@
-"""
-Tests for Full Demonstration Workflow (Part 7)
-
-Tests the complete user flow from request to result.
-"""
-
 import pytest
 
 
 @pytest.mark.integration
 class TestFullWorkflow:
-    """Test suite for end-to-end workflow functionality."""
-
     def test_full_flow_summarize(self, http_client, health_check, company_id):
-        """Test complete workflow for summarization task."""
         intent = {
             "intent": "summarize",
             "task_type": "summarization",
@@ -20,7 +11,6 @@ class TestFullWorkflow:
             "original_request": "test",
             "confidence": 0.9,
         }
-
         exec_response = http_client.post(
             "/api/agent/execute",
             json={"intent": intent, "company_id": company_id},
@@ -30,7 +20,6 @@ class TestFullWorkflow:
         assert "agents_used" in exec_data
 
     def test_full_flow_research(self, http_client, health_check, company_id):
-        """Test complete workflow for research task."""
         intent = {
             "intent": "research",
             "task_type": "research",
@@ -38,7 +27,6 @@ class TestFullWorkflow:
             "original_request": "test",
             "confidence": 0.9,
         }
-
         exec_response = http_client.post(
             "/api/agent/execute",
             json={"intent": intent, "company_id": company_id},
@@ -46,10 +34,8 @@ class TestFullWorkflow:
         assert exec_response.status_code == 200
 
     def test_api_key_lifecycle(self, http_client, health_check, company_id):
-        """Test API key works for authentication."""
         status_response = http_client.get(f"/api/company/{company_id}/api-key-status")
         assert status_response.status_code == 200
-
         exec_response = http_client.post(
             "/api/agent/execute",
             json={
@@ -66,14 +52,12 @@ class TestFullWorkflow:
         assert exec_response.status_code == 200
 
     def test_health_check(self, http_client):
-        """Test health check endpoint."""
         response = http_client.get("/health")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
 
     def test_full_flow_with_delegation(self, http_client, health_check, company_id):
-        """Test complete workflow with agent delegation enabled."""
         intent = {
             "intent": "research and summarize",
             "task_type": "complex",
@@ -81,7 +65,6 @@ class TestFullWorkflow:
             "original_request": "test",
             "confidence": 0.9,
         }
-
         exec_response = http_client.post(
             "/api/agent/execute",
             json={"intent": intent, "company_id": company_id},
@@ -90,7 +73,6 @@ class TestFullWorkflow:
         assert exec_response.status_code == 200
 
     def test_marketplace_to_execution_flow(self, http_client, health_check, company_id):
-        """Test flow from marketplace browsing to agent execution."""
         agents_response = http_client.get("/api/marketplace/agents")
         assert agents_response.status_code == 200
         agents_data = agents_response.json()
