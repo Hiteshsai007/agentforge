@@ -1,5 +1,12 @@
-import pytest
+import sys
 import os
+from pathlib import Path
+
+backend_dir = Path(__file__).parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+import pytest
 
 os.environ.setdefault("SUPABASE_URL", "https://iudjozrtichetbdwzgzv.supabase.co")
 os.environ.setdefault(

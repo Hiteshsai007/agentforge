@@ -71,6 +71,7 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
+          export PYTHONPATH="$(pwd)/backend:$PYTHONPATH"
           export TEST_BASE_URL="http://localhost:8013"
           export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
           export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
@@ -166,6 +167,7 @@ jobs:
       - name: Run ${{ matrix.feature }} tests
         run: |
           source .venv/bin/activate
+          export PYTHONPATH="$(pwd)/backend:$PYTHONPATH"
           export TEST_BASE_URL="http://localhost:8013"
           export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
           export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
