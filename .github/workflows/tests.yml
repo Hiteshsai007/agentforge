@@ -30,29 +30,28 @@ jobs:
       - name: Cache virtual environment
         uses: actions/cache@v4
         with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+          path: backend/.venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('backend/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-venv-
 
       - name: Install dependencies
+        working-directory: backend
         run: |
           python -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-cov httpx
 
       - name: Start backend server
+        working-directory: backend
         run: |
           source .venv/bin/activate
-          export PYTHONPATH="$(pwd):$PYTHONPATH"
-          export TEST_BASE_URL="http://localhost:8013"
-          export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
-          export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
           export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
           export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
-          nohup .venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8013 &
+          export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+          nohup .venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8013 &
           sleep 10
 
       - name: Wait for backend to be ready
@@ -69,21 +68,21 @@ jobs:
           exit 1
 
       - name: Run tests
+        working-directory: backend
         run: |
           source .venv/bin/activate
-          export PYTHONPATH="$(pwd)/backend:$PYTHONPATH"
-          export TEST_BASE_URL="http://localhost:8013"
-          export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
-          export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
           export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
           export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
-          pytest backend/tests/ -v --cov=backend --cov-report=xml --cov-report=html --cov-report=term
+          export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+          export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
+          export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
+          pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --cov-report=term
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: success()
         with:
-          files: ./coverage.xml
+          files: ./backend/coverage.xml
           flags: unittests
           name: AI-Agent-Marketplace
           fail_ci_if_error: false
@@ -93,7 +92,7 @@ jobs:
         if: always()
         with:
           name: coverage-report
-          path: htmlcov/
+          path: backend/htmlcov/
           retention-days: 14
 
   # ─────────────────────────────────────────────
@@ -148,29 +147,30 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
+        working-directory: backend
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          pip install -r backend/requirements.txt
+          pip install -r requirements.txt
           pip install pytest pytest-asyncio httpx
 
       - name: Start backend
+        working-directory: backend
         run: |
           source .venv/bin/activate
-          export PYTHONPATH="$(pwd):$PYTHONPATH"
-          export TEST_BASE_URL="http://localhost:8013"
           export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
           export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
-          nohup .venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8013 &
+          export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+          nohup .venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8013 &
           sleep 10
 
       - name: Run ${{ matrix.feature }} tests
+        working-directory: backend
         run: |
           source .venv/bin/activate
-          export PYTHONPATH="$(pwd)/backend:$PYTHONPATH"
-          export TEST_BASE_URL="http://localhost:8013"
-          export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
-          export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
           export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
           export SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
-          pytest backend/tests/ -v -m ${{ matrix.feature }}
+          export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+          export TEST_COMPANY_ID="${{ secrets.TEST_COMPANY_ID }}"
+          export TEST_API_KEY="${{ secrets.TEST_API_KEY }}"
+          pytest tests/ -v -m ${{ matrix.feature }}
