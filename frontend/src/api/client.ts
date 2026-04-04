@@ -120,6 +120,13 @@ export const getAdminMetrics = async (company_id: string, agent_id?: string) => 
   return data;
 };
 
+export const getCompanyMetrics = async (company_id: string, timeRange: '24h' | '7d' | '30d' = '7d') => {
+  const { data } = await api.get(`/api/company/${company_id}/metrics`, {
+    params: { range: timeRange },
+  });
+  return data;
+};
+
 // ── Credentials ───────────────────────────────────────────────────────────────
 export const generateCredentials = async (company_id: string, agent_id: string) => {
   const { data } = await api.post(

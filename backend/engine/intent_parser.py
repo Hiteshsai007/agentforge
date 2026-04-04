@@ -122,10 +122,11 @@ def parse_intent(request: str) -> dict:
         genai = _get_genai()
         model = genai.GenerativeModel(
             model_name=os.getenv("LLM_MODEL", "gemini-2.0-flash"),
-            system_instruction=_SYSTEM_PROMPT,
         )
 
-        prompt = f"Parse this user request: {request}"
+        prompt = f"""{_SYSTEM_PROMPT}
+
+Parse this user request: {request}"""
         response = model.generate_content(prompt)
         raw = response.text.strip()
 
