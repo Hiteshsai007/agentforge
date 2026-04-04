@@ -616,3 +616,110 @@ async def get_api_key_status(company_id: str):
         "api_key_expiry_date": data.get("api_key_expiry_date"),
         "has_active_key": data.get("api_key_status") == "active",
     }
+
+
+@router.get("/{company_id}/metrics", tags=["Company"])
+async def get_company_metrics(
+    company_id: str, 
+    range: str = "7d"  # 24h, 7d, 30d
+):
+    """
+    Get company-wide metrics with time range support.
+    """
+    from datetime import datetime, timedelta
+    
+    db = get_supabase()
+    
+    # Determine date cutoff
+    now = datetime.utcnow()
+    if range == "24h":
+        cutoff = now - timedelta(hours=24)
+    elif range == "30d":
+        cutoff = now - timedelta(days=30)
+    else:  # 7d
+        cutoff = now - timedelta(days=7)
+    
+    # Fetch execution history within range
+    hist = (
+        db.table("execution_history")
+        .select("*")
+        .eq("company_id", company_id)
+        .gte("executed_at", cutoff.isoformat())
+        .order("executed_at", desc=True)
+        .execute()
+    )
+    
+    rows = hist.data or []
+    
+    # Calculate overall metrics
+    total_requests = len(rows)
+    successful_requests = sum(1 for r in rows if r.get("success"))
+    failed_requests = total_requests - successful_requests
+    
+    success_rate = (successful_requests / max(total_requests, 1)) * 100
+    avg_response_time = round(
+        sum(r.get("execution_time_seconds", 0) or 0 for r in rows) / max(total_requests, 1) * 1000, 
+        2
+    )  # Convert to ms
+    
+    # Group by agent for breakdown
+    agent_metrics = {}
+    for row in rows:
+        agent_id = row.get("agent_id", "unknown")
+        if agent_id not in agent_metrics:
+            agent_metrics[agent_id] = {
+                "agent_id": agent_id,
+                "agent_name": row.get("agent_name", "Unknown Agent"),
+                "total_requests": 0,
+                "successful_requests": 0,
+                "failed_requests": 0,
+                "response_times": []
+            }
+        
+        agent_metrics[agent_id]["total_requests"] += 1
+        if row.get("success"):
+            agent_metrics[agent_id]["successful_requests"] += 1
+        else:
+            agent_metrics[agent_id]["failed_requests"] += 1
+        
+        if row.get("execution_time_seconds"):
+            agent_metrics[agent_id]["response_times"].append(row["execution_time_seconds"])
+    
+    # Calculate per-agent stats
+    agents = []
+    for agent_id, metrics in agent_metrics.items():
+        success_rate_agent = (metrics["successful_requests"] / max(metrics["total_requests"], 1)) * 100
+        avg_response = (sum(metrics["response_times"]) / len(metrics["response_times"])) if metrics["response_times"] else 0
+        
+        agents.append({
+            "agent_id": agent_id,
+            "agent_name": metrics["agent_name"],
+            "total_requests": metrics["total_requests"],
+            "successful_requests": metrics["successful_requests"],
+            "failed_requests": metrics["failed_requests"],
+            "success_rate": round(success_rate_agent, 1),
+            "avg_response_time": round(avg_response * 1000, 2)  # Convert to ms
+        })
+    
+    # Group by day for timeline
+    from collections import defaultdict
+    daily_requests = defaultdict(int)
+    for row in rows:
+        day = (row.get("executed_at") or "")[:10]
+        if day:
+            daily_requests[day] += 1
+    
+    daily_requests_list = [
+        {"date": day, "count": count}
+        for day, count in sorted(daily_requests.items())
+    ]
+    
+    return {
+        "total_requests": total_requests,
+        "successful_requests": successful_requests,
+        "failed_requests": failed_requests,
+        "success_rate": round(success_rate, 1),
+        "avg_response_time": avg_response_time,
+        "agents": sorted(agents, key=lambda x: x["total_requests"], reverse=True),
+        "daily_requests": daily_requests_list
+    }

@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import AgentRegistration from './AgentRegistration';
+import PremiumNav from '../PremiumNav';
 
-export default function DeveloperPortal() {
+interface Props {
+  userEmail?: string;
+  onLogout?: () => void;
+}
+
+export default function DeveloperPortal({ userEmail, onLogout }: Props) {
   const [showRegistration, setShowRegistration] = useState(false);
 
   return (
-    <div className="page-container max-w-6xl space-y-8">
+    <div className="min-h-screen bg-black">
+      <PremiumNav userEmail={userEmail} onLogout={onLogout} />
+      <div className="page-container max-w-6xl space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between bg-black/40 p-8 rounded-3xl border border-white/5 relative overflow-hidden backdrop-blur-xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
@@ -84,6 +92,7 @@ export default function DeveloperPortal() {
 
       {/* Modals */}
       {showRegistration && <AgentRegistration onClose={() => setShowRegistration(false)} />}
+    </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 os.environ.setdefault("SUPABASE_URL", "https://iudjozrtichetbdwzgzv.supabase.co")
 os.environ.setdefault(

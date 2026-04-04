@@ -2,14 +2,17 @@ import { useState } from 'react';
 import type { Intent, ExecutionResult } from '../../types';
 import { parseIntent, executeAgent } from '../../api/client';
 import MultiAgentWorkflow from './MultiAgentWorkflow';
+import ExecutionResultsViewer from './ExecutionResultsViewer';
+import PremiumLayout from '../PremiumLayout';
 import toast from 'react-hot-toast';
 
 interface Props {
   companyId: string;
   userId: string;
+  onLogout?: () => void;
 }
 
-export default function RequestInterface({ companyId, userId }: Props) {
+export default function RequestInterface({ companyId, userId, onLogout }: Props) {
   const [request, setRequest] = useState('');
   const [loading, setLoading] = useState(false);
   const [parsing, setParsing] = useState(false);
@@ -74,7 +77,8 @@ export default function RequestInterface({ companyId, userId }: Props) {
   };
 
   return (
-    <div className="page-container max-w-5xl flex flex-col items-center">
+    <PremiumLayout navProps={{ userEmail: userId, onLogout }}>
+      <div className="page-container max-w-5xl flex flex-col items-center pt-20">
 
       {/* Header */}
       <div className="text-center w-full max-w-3xl mb-12">
@@ -86,168 +90,189 @@ export default function RequestInterface({ companyId, userId }: Props) {
         </p>
       </div>
 
-      {/* Input Area */}
-      <div className="w-full max-w-3xl relative">
-        {/* Glow behind input */}
-        <div className="absolute inset-0 bg-cyan-500/20 rounded-2xl blur-xl transition-opacity duration-500 opacity-50 pointer-events-none" />
+      {/* Input Area - Enhanced */}
+      <div className="w-full max-w-4xl relative">
+        {/* Background Glow Effects */}
+        <div className="absolute -inset-8 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-cyan-500/10 rounded-3xl blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-        <div className="glass-panel relative z-10 p-2 flex bg-[var(--bg-surface)]/80">
+        <div className="glass-panel relative z-10 p-1 flex flex-col bg-gradient-to-b from-white/5 to-white/0 border border-white/10 overflow-hidden group">
+          {/* Textarea */}
           <textarea
             value={request}
             onChange={(e) => setRequest(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your request here..."
-            className="w-full bg-transparent border-none resize-none focus:outline-none focus:ring-0 text-white p-4 h-32 md:h-16 lead text-lg"
+            placeholder="Describe your task..."
+            className="w-full bg-transparent border-none resize-none focus:outline-none focus:ring-0 text-white p-6 ps-8 h-32 md:h-28 leading-relaxed text-lg placeholder-gray-500 font-medium"
             disabled={parsing || loading}
           />
           
-          {/* Delegation Toggle */}
-          <div className="absolute bottom-4 left-4 flex items-center gap-2">
-            <label className="relative inline-flex items-center cursor-pointer">
+          {/* Controls Bar */}
+          <div className="px-6 pb-6 pt-3 border-t border-white/5 flex items-center justify-between gap-4">
+            {/* Delegation Toggle */}
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
               <input 
                 type="checkbox" 
                 checked={delegationEnabled}
                 onChange={(e) => setDelegationEnabled(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
-              <span className="ml-2 text-xs text-gray-400">Agent Delegation</span>
+              <div className="w-9 h-5 bg-gray-700 rounded-full peer-checked:bg-indigo-600 transition-colors relative">
+                <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 peer-checked:left-4 transition-all" />
+              </div>
+              <span className="text-xs font-medium text-gray-400 peer-checked:text-indigo-300 transition-colors">
+                🔗 Multi-Agent
+              </span>
             </label>
-          </div>
 
-          <div className="absolute bottom-4 right-4 flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-mono hidden md:inline">Press Enter ↵</span>
-            <button
-              onClick={() => handleSubmit()}
-              disabled={parsing || loading || !request.trim()}
-              className={`p-3 rounded-xl transition-all ${request.trim() && !parsing && !loading
-                  ? 'bg-cyan-600 text-white shadow-[0_0_20px_rgba(8,145,178,0.5)] hover:bg-cyan-500'
-                  : 'bg-white/5 text-gray-500 cursor-not-allowed'
+            {/* Submit Button */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 font-mono hidden sm:inline">⏎ Enter</span>
+              <button
+                onClick={() => handleSubmit()}
+                disabled={parsing || loading || !request.trim()}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                  request.trim() && !parsing && !loading
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/50'
+                    : 'bg-white/5 text-gray-500 cursor-not-allowed'
                 }`}
-            >
-              {parsing ? '🧠' : loading ? '⚡' : '🚀'}
-            </button>
+              >
+                {parsing && <span className="animate-spin">⚙️</span>}
+                {loading && <span className="animate-bounce">⚡</span>}
+                {!parsing && !loading && <span>🚀</span>}
+                <span>{parsing ? 'Parsing' : loading ? 'Executing' : 'Execute'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Suggestions */}
-        {!intent && !parsing && (
-          <div className="mt-8 flex flex-wrap gap-2 justify-center">
+        {/* Quick Suggestions */}
+        {!intent && !parsing && !loading && (
+          <div className="mt-8 flex flex-wrap gap-3 justify-center relative z-20 pointer-events-auto">
             {suggestions.map((s, i) => (
               <button
                 key={i}
                 onClick={() => handleSubmit(s)}
-                className="px-4 py-2 rounded-full text-sm bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200 transition-colors"
+                className="px-4 py-2 rounded-full text-sm bg-white/5 border border-white/10 text-gray-400 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-300 transition-all cursor-pointer active:scale-95"
               >
-                "{s}"
+                {s}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* States */}
-      <div className="w-full mt-12 mb-20 flex flex-col items-center min-h-[400px]">
+      {/* Results Section */}
+      <div className="w-full mt-16 mb-20 flex flex-col items-center min-h-[200px]">
+        {/* Parsing State */}
         {parsing && (
-          <div className="flex flex-col items-center gap-4 text-cyan-400 animate-pulse mt-20">
-            <div className="w-16 h-16 rounded-full border-4 border-t-cyan-400 border-r-cyan-400/30 border-b-cyan-400/10 border-l-cyan-400/30 animate-spin" />
-            <p className="font-medium tracking-wider uppercase text-sm">Analyzing Intent...</p>
+          <div className="flex flex-col items-center gap-6 mt-12 animate-in fade-in duration-300">
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-indigo-500 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin" />
+              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center text-2xl">
+                🧠
+              </div>
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-white mb-2">Analyzing Your Request</h3>
+              <p className="text-gray-400">Understanding intent and extracting parameters...</p>
+            </div>
           </div>
         )}
 
+        {/* Loading State */}
         {loading && !parsing && intent && (
-          <div className="flex flex-col items-center gap-6 mt-10">
-            <div className="glass-panel p-6 border-cyan-500/30 w-full max-w-xl text-center bg-cyan-900/10">
-              <span className="text-xs font-semibold uppercase tracking-wider text-cyan-400 block mb-2">Intent Parsed</span>
-              <p className="font-medium text-white mb-4">Required Capability: <span className="bg-cyan-500/20 px-2 py-1 rounded text-cyan-300">{intent.required_capability}</span></p>
+          <div className="w-full max-w-4xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="glass-panel p-8 border border-indigo-500/20 bg-gradient-to-r from-indigo-500/5 to-purple-500/5">
+              <div className="flex items-start gap-6">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-14 w-14 rounded-full bg-indigo-500/20">
+                    <div className="w-7 h-7 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-white mb-3">Processing Your Request</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-black/30 rounded-lg p-3">
+                      <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">Intent Understood</p>
+                      <p className="text-white font-mono text-sm">{intent.intent}</p>
+                    </div>
+                    
+                    <div className="bg-black/30 rounded-lg p-3">
+                      <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">Required Capability</p>
+                      <p className="text-indigo-300 font-mono text-sm">{intent.required_capability}</p>
+                    </div>
 
-              <div className="flex items-center justify-center gap-4 text-sm text-[var(--text-secondary)]">
-                <span className="loading-dots">Routing to best agent in portfolio</span>
+                    {intent.is_multi_agent && (
+                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                        <p className="text-xs uppercase tracking-widest text-amber-400 font-semibold">Multi-Agent Workflow Detected</p>
+                        <p className="text-amber-100 text-sm mt-1">{intent.sub_tasks?.length || 0} steps will be coordinated</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-sm text-gray-400 mt-4">
+                    Routing to best available agent in your portfolio...
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Execution Results */}
+        {/* Results Display */}
         {execution && !loading && (
-          <div className="w-full animate-in slide-in-from-bottom-8 duration-700">
-
-            {/* Multi-Agent Handling */}
+          <div className="w-full max-w-4xl mx-auto">
             {execution.routing?.is_multi_agent && !execution.success ? (
               <MultiAgentWorkflow
                 steps={execution.routing.workflow_steps}
                 companyId={companyId}
                 onRefreshDocs={() => handleSubmit(request)}
               />
-            ) : !execution.success ? (
-              <div className="glass-panel p-8 text-center max-w-2xl mx-auto bg-red-900/10 border-red-500/20">
-                <div className="text-4xl mb-4">⚠️</div>
-                <h3 className="text-xl font-bold text-red-400 mb-2">Task Failed</h3>
-                <p className="text-gray-300 mb-6">{execution.error}</p>
-
-                {/* Fallback to Marketplace suggestion */}
-                {execution.routing?.alternatives && execution.routing.alternatives.length > 0 && (
-                  <div className="bg-black/40 p-4 rounded-xl border border-white/5 text-left">
-                    <p className="text-sm font-semibold mb-3">Marketplace Alternative Available:</p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="font-bold">{execution.routing.alternatives[0]?.agent_name}</span>
-                        <span className="text-xs text-emerald-400 ml-2">
-                          ⭐ {((execution.routing.alternatives[0]?.quality_score ?? 0) * 5).toFixed(1)}/5
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-500 italic">Contact Admin to add</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             ) : (
-              /* Success State */
-              <div className="glass-panel p-0 max-w-3xl mx-auto overflow-hidden shadow-2xl shadow-cyan-500/10">
-                <div className="p-6 border-b border-white/10 bg-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
-                      ✓
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white">Task Completed</h3>
-                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                        Handled by <span className="text-cyan-400">{execution.agents_used.join(', ')}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 text-xs font-mono text-[var(--text-secondary)] text-right">
-                    <div>
-                      <span className="block text-gray-500 uppercase tracking-widest text-[10px]">Time</span>
-                      {execution.execution_time}s
-                    </div>
-                    <div>
-                      <span className="block text-gray-500 uppercase tracking-widest text-[10px]">Tokens</span>
-                      {execution.tokens_used.toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-8 pb-12">
-                  <div className="prose prose-invert max-w-none text-gray-200">
-                    {/* Simulated markdown rendering */}
-                    <p className="whitespace-pre-wrap leading-relaxed">
-                      {execution.result?.output}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-black/40 border-t border-white/5 flex gap-2 justify-end">
-                  <button onClick={() => { setRequest(''); setExecution(null); }} className="secondary-btn">New Request</button>
-                  <button className="primary-btn bg-cyan-600 hover:bg-cyan-500 text-white shadow shadow-cyan-500/20">Copy Result</button>
-                </div>
-              </div>
+              <ExecutionResultsViewer 
+                execution={execution}
+                intent={intent!}
+                loading={false}
+              />
             )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 justify-center mt-8">
+              <button
+                onClick={() => {
+                  setRequest('');
+                  setExecution(null);
+                  setIntent(null);
+                }}
+                className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg font-semibold text-white transition-all"
+              >
+                ✨ New Request
+              </button>
+              
+              {execution.success && execution.result?.output && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(execution.result?.output || '');
+                    toast.success('Result copied to clipboard!');
+                  }}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/30 rounded-lg font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all"
+                >
+                  📋 Copy Result
+                </button>
+              )}
+            </div>
           </div>
+        )}
+
+        {/* Empty State */}
+        {!parsing && !loading && !execution && !intent && (
+          <div className="text-center mt-20" />
         )}
       </div>
 
-    </div>
+      </div>
+    </PremiumLayout>
   );
 }
